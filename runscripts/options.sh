@@ -16,16 +16,19 @@ JBB_HOME="/opt/dsamersoff/specjbb2015-1.03a"
 fi
 
 # Number of Groups (TxInjectors mapped to Backend) to expect
+# Support 0, 1, 2, 4 groups. 0 means composite
 GROUP_COUNT=2
 
 # Number of TxInjector JVMs to expect in each Group
 TI_JVM_COUNT=1
 
 # Memory usage
-# NB! No automatic adjustments to GROUP_COUNT
+# Page number is not adjusted to group count and passed as is. Take care.
 PAGES=460
 
-# Use or not numactl
+# Use or not numactl 
+# 1 or 2 sockets supported
+# GROUPS 0 NUMA Yes means composite run bound to 1 socket
 NUMA=Yes
 
 # Benchmark options for Controller / TxInjector JVM / Backend
@@ -137,15 +140,4 @@ echo "$JAVA_OPTS_C"  | sed -e 's/ \+/\nJAVA_OPTS_Cx: /g' >> options.txt
 echo "$JAVA_OPTS_TI" | sed -e 's/ \+/\nJAVA_OPTS_TI: /g' >> options.txt 
 echo "$JAVA_OPTS_BE" | sed -e 's/ \+/\nJAVA_OPTS_BE: /g' >> options.txt 
 
-# Lines below commented out as it has
-# No value for Jenkins run
-
-# if [ "x$1" = "xdefault" ]
-# then
-#   cp options.txt options_default.txt
-# fi
-
-# if [ -e options_default.txt ]
-# then
-#  diff -U0 options_default.txt options.txt > options.diff
-# fi  
+# END of OPTIONS
