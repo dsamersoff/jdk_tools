@@ -4,30 +4,30 @@ This is the set of scripts to support specjbb performance tuning
 
 ## Content:
 
-  specjbb.py   - report generation script (check help for usage guidelines)
+  **specjbb.py**   - report generation script (check help for usage guidelines)
 
-  ownsync.py   - sync directory to ownCloud instance (check help for usage guidelines)
+  **ownsync.py**   - sync directory to ownCloud instance (check help for usage guidelines)
   
-  runscripts   - template for specjbb run
+  **runscripts**   - template for specjbb run
 
-  tmux.conf    - file to copy to ~/.tmux.conf 
+  **tmux.conf**    - file to copy to ~/.tmux.conf, binds C-A  
 
   More information about individual scripts are inside the script it self
 
 ## Proposed flow:
   1. Create a folder **specjbb_cw_date**
 
-     `specjbb_cw_20200518`
+    e.g. `specjbb_cw_20200518`
   
   2. Copy <specjbb_scripts>/runscripts to folder with meaningful name
 
-      `multivm-2G-2S-1T`
+    e.g.  `multivm-2G-2S-1T`
 
   3.  Edit **options.sh** and **set_system.sh** file as required
 
   4.  Edit **README.md** file and add short, one-line description of this run
   
-      `Turning on JVM NUMA`
+    e.g.  `Turning on JVM NUMA`
   
   5.  Make **runme.sh** executable and run it with the number of similar runs you need, it's recommended to use tmux or screen    
   
@@ -37,11 +37,11 @@ This is the set of scripts to support specjbb performance tuning
   
        `<specjbb_scripts>/bin/specjbb.py`  
 
-  7.  Edit options.sh, set_system.sh, README.md as necessary (previous values are stored within run automatically within run folder) and run runme.sh again
+  7.  Edit options.sh, set_system.sh, README.md as necessary (previous values are stored automatically within run folder) and run runme.sh again
 
   8.  Go to **specjbb_cw_date** folder, create another folder and perform another set of runs  
 
-      `composite-2G-2S-1T`
+      e.g. `composite-2G-2S-1T`
 
   9.  Go to **specjbb_cw_date** folder, specjbb.py to generate report
 
