@@ -1,0 +1,103 @@
+# Common setup
+
+setenv JAVA_HOME /opt/jdk
+
+setenv T_PATH "/opt/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin"
+
+
+if ( -e ${JAVA_HOME}/bin ) then
+	setenv T_PATH ${T_PATH}:${JAVA_HOME}/bin
+endif
+
+if ( -e /usr/X11/bin ) then
+	setenv T_PATH ${T_PATH}:/usr/X11/bin
+else
+  if ( -e /usr/X11R6/bin ) then
+	setenv T_PATH ${T_PATH}:/usr/X11R6/bin
+  endif
+endif
+
+if ( -e ${HOME}/opt/bin ) then
+	setenv T_PATH ${HOME}/opt/bin:${T_PATH}
+endif
+
+if ( -e ${HOME}/bin ) then
+	setenv T_PATH ${HOME}/bin:${T_PATH}
+endif
+
+setenv PATH ${T_PATH}
+
+# setenv LC_ALL ru_RU.utf8
+setenv LC_ALL en_US.UTF-8 
+# setenv LANG en_US.UTF-8 
+setenv EDITOR vi
+
+limit coredumpsize unlimited
+
+
+if ($?prompt) then
+# Don't execute commands below for scp etc
+#
+
+# set prompt='%n@%m:%~#'
+# set prompt='%m:%C#'
+
+if ( -e .ssh/rdp_config ) then
+	source .ssh/rdp_config
+endif
+
+set nn=`id -u`
+if ( ${nn} == "0" ) then
+        set prompt='%{\033[35m%}%m%{\033[0m%}:%C#'
+	alias mc 'mc -b'
+else
+        set prompt='%{\033[94m%}%m%{\033[0m%}:%C#'
+	alias mc 'mc '
+endif
+
+set autolist
+set autologout=0
+set ellipsis
+set correct=none
+
+
+# set complete = enhance                                                                                                                 
+complete sudo 'n/-l/u/' 'p/1/c/'                                                                                                       
+
+bindkey -k up history-search-backward                                                                                          
+bindkey -k down history-search-forward
+
+## os_guess
+set HOST_OS=`uname`
+set HOST_OS_ARCH=`uname -m`
+
+switch ( $HOST_OS ) 
+ 	case SunOS:
+	      	set HOST_OS="solaris"
+	       	set HOST_OS_ARCH=`uname -p`
+  	breaksw
+  	case Linux:
+	 	set HOST_OS="linux"
+  	breaksw 
+endsw 
+
+# alias cwdcmd '~/.xtitle_${HOST_OS}_${HOST_OS_ARCH}'
+
+# setenv http_proxy emea-proxy.uk.oracle.com:80
+# setenv https_proxy emea-proxy.uk.oracle.com:80
+# setenv ftp_proxy emea-proxy.uk.oracle.com:80
+
+# Manage aliases
+unalias cd
+unalias pushd
+unalias popd
+unalias rm
+
+alias fix_jdk_path 'fix_jdk_path --ojdkname=dsamersoff'
+alias xv 'xzgv '
+alias vi 'vim '
+alias cgrep 'cgrep.py '
+
+# ~/.xtitle_${HOST_OS}_${HOST_OS_ARCH} 
+
+endif
