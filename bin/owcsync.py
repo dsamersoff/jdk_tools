@@ -33,7 +33,11 @@ import configparser
 from datetime import datetime, timedelta
 from signal import signal, SIGINT
 
-import owncloud
+try:
+  import owncloud
+except ImportError as ex:
+  print("Error: %s, run: pip install pyocclient" % str(ex))
+  sys.exit(-1)
 
 _cloud = "4foo.net"
 _oc_url = "https://cloud.4foo.net/owncloud"
