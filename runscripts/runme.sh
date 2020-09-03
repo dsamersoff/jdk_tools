@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION="2.05 2020-08-27"
+VERSION="2.05 2020-09-03"
 
 ###############################################################################
 # Sample script for running SPECjbb2015 in MultiJVM mode.
@@ -17,7 +17,16 @@ else
   NUM_OF_RUNS=$1
 fi
 
-script_path=$(cd "$(dirname "$0")"; pwd)
+# Allow to set rundir explicitly 
+# to support run from jenkins
+if [ "x${RUNDIR}" == "x" ]
+then
+  script_path=$(cd "$(dirname "$0")"; pwd)
+else
+  script_path=$(cd "${RUNDIR}"; pwd)
+fi 
+
+echo "Using rundir ${script_path}"
 
 # For options look at options.sh
 . $script_path/options.sh
