@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION="2.04 2020-05-14"
+VERSION="2.05 2020-08-27"
 
 ###############################################################################
 # Sample script for running SPECjbb2015 in MultiJVM mode.
@@ -185,7 +185,7 @@ for ((n=1; $n<=$NUM_OF_RUNS; n=$n+1)); do
     echo
     BE_NAME="Composite"
     DEBUG_OPTS_BE="-XX:+PrintGC -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -Xloggc:${BE_NAME}.gc.log"
-    CMD_BE="$JAVA $JAVA_OPTS_BE $DEBUG_OPTS_BE $SPEC_OPTS_BE -jar ${JBB_HOME}/specjbb2015.jar -m COMPOSITE $MODE_ARGS_BE"
+    CMD_BE="$JAVA $JAVA_OPTS_BE $DEBUG_OPTS_BE $SPEC_OPTS_C $SPEC_OPTS_BE -jar ${JBB_HOME}/specjbb2015.jar -m COMPOSITE $MODE_ARGS_BE"
     echo $CMD_BE > ${BE_NAME}.cmdline.txt
     if [ "x$NUMA" = "xYes" ]
     then
