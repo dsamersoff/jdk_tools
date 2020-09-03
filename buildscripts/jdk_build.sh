@@ -9,12 +9,18 @@ _ws=`pwd | sed -e 's,.*/,,'`
 _jdk_collection_root="/opt"
 _flavor="fastdebug"
 _boot_jdk="/opt/jdk11"
-_jmh="no"
 _pch="--disable-precompiled-headers"
 _werror="--disable-warnings-as-errors"
 
+_jmh="no"
+
 # Try to guess correct boot jdk
 # it should be jdk11 jdk14 etc under _jdk_collection_root
+
+if [ "x$JDK_COLLECTION_ROOT" != "x" ]
+then
+  _jdk_collection_root="$JDK_COLLECTION_ROOT"
+fi
 
 if [ -f ./make/autoconf/version-numbers ]
 then
