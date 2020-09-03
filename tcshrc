@@ -59,6 +59,7 @@ set autolist
 set autologout=0
 set ellipsis
 set correct=none
+set nobeep
 
 
 # set complete = enhance                                                                                                                 
