@@ -3,10 +3,10 @@
 VERSION="2.04 2020-09-04"
 
 # Load configuration
-source $JENKINS_HOME/specjbb_scripts/job_scripts/config.sh
-if [ -f $JENKINS_HOME/specjbb_scripts/job_scripts/${JOB_NAME}/config.sh ]
+source $JENKINS_HOME/specjbb_scripts/jobscripts/config.sh
+if [ -f $JENKINS_HOME/specjbb_scripts/jobscripts/${JOB_NAME}/config.sh ]
 then
-  source $JENKINS_HOME/specjbb_scripts/job_scripts/${JOB_NAME}/config.sh
+  source $JENKINS_HOME/specjbb_scripts/jobscripts/${JOB_NAME}/config.sh
 fi
 
 if [ "x$1" = "x" ]
@@ -22,10 +22,11 @@ cd $JENKINS_HOME/specjbb_scripts
 
 tar czf - runscripts | ssh ${JBB_REMOTE} "mkdir -p ${JBB_RUN_ROOT}/${JOB_NAME}; cd ${JBB_RUN_ROOT}/${JOB_NAME} && tar xzvf -"
 scp $JENKINS_HOME/specjbb_scripts/bin/specjbb.py $JBB_REMOTE:${JBB_RUN_ROOT}/${JOB_NAME}
-if [ -f $JENKINS_HOME/specjbb_scripts/job_scripts/${JOB_NAME}/options.sh ]
+
+if [ -f $JENKINS_HOME/specjbb_scripts/jobscripts/${JOB_NAME}/options.sh ]
 then
     echo "Warning: Overriding default options.sh file with JOB specific one"
-    scp $JENKINS_HOME/specjbb_scripts/job_scripts/${JOB_NAME}/options.sh $JBB_REMOTE:${JBB_RUN_ROOT}/${JOB_NAME}/runscripts
+    scp $JENKINS_HOME/specjbb_scripts/jobscripts/${JOB_NAME}/options.sh $JBB_REMOTE:${JBB_RUN_ROOT}/${JOB_NAME}/runscripts
 fi    
 
 # Guess jdk image and copy it to remote machine
