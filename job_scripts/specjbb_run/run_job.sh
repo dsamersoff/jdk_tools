@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION="2.01 2020-09-04"
+VERSION="2.03 2020-09-04"
 
 # Load configuration
 source $JENKINS_HOME/specjbb_scripts/job_scripts/config.sh
@@ -42,7 +42,7 @@ fi
 echo "Copying ${_jdk} to ${JBB_REMOTE}:${JBB_RUN_ROOT}/${JOB_NAME}/${_jdk_name}"
 
 cd ${_jdk}/..
-tar czf - ${_jdk_name} | ssh ${JBB_REMOTE} "cd ${JBB_RUN_ROOT}/${JOB_NAME} && tar xzvf -"
+tar czf - ${_jdk_name} | ssh ${JBB_REMOTE} "cd ${JBB_RUN_ROOT}/${JOB_NAME} && tar xzf -"
 
 # Create a run script on the remote side, that sets some environment variables
 cat  | ssh ${JBB_REMOTE} "cd ${JBB_RUN_ROOT}/${JOB_NAME} && tee runme_tmp.sh" << EOM 
