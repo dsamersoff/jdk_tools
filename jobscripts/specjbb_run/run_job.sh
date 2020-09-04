@@ -65,4 +65,4 @@ EOM
 ssh -n $JBB_REMOTE "cd ${JBB_RUN_ROOT}/${JOB_NAME} && sudo /bin/sh ./runme_tmp.sh"
 
 # Copy results back to jenkins machine
-scp -r ${JBB_REMOTE}:${JBB_RUN_ROOT}/${JOB_NAME}/${JOB_NAME}.xlsx .
+scp -r ${JBB_REMOTE}:${JBB_RUN_ROOT}/${JOB_NAME}/runscripts/${JOB_NAME}.xlsx .
