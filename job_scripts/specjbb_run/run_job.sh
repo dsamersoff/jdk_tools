@@ -52,7 +52,7 @@ export JOB_NAME=${JOB_NAME}
 cd runscripts 
 echo ${JOB_NAME} > README.md
 /bin/sh ./runme.sh
-python3 ./specjbb.py -o ${JOB_NAME}.xlsx
+python3 ${JBB_RUN_ROOT}/${JOB_NAME}/specjbb.py -o ${JOB_NAME}.xlsx
 EOM
 
 # Run specjbb
