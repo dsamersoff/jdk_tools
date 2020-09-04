@@ -9,14 +9,27 @@ then
   _jdk_update_url="${JDK_UPDATE_URL}"
 fi
 
-for jdk in "$@"
-do
-   if [ -d ${jdk} ]
-   then
-      cd ${jdk}
-      hg update
-   else
-      hg clone ${_jdk_update_url}/${jdk}
-   fi
-done
+if [ "x$1" = "x" ]
+then
+  echo "Error: Workspace is not specified"
+  exit 7
+fi
 
+_jdk=$1 
+_tag=tip
+
+if [ "x$2" != "x" ]
+then
+  _tag=$2
+fi
+
+if [ -d ${_jdk} ]
+then
+      cd ${_jdk}
+      hg update -r ${_tag}
+else
+      echo "Clone ${_tag} from ${_jdk_update_url}/${_jdk}"
+      hg clone -r ${_tag} ${_jdk_update_url}/${_jdk}
+fi
+
+echo "Done"
