@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION="2.03 2020-09-04"
+VERSION="2.04 2020-09-04"
 
 # Load configuration
 source $JENKINS_HOME/specjbb_scripts/job_scripts/config.sh
@@ -11,7 +11,7 @@ fi
 
 if [ "x$1" = "x" ]
 then
-  echo "Workspace to build shall be specified e.g. jdk14"
+  echo "Error: No workspace specified e.g. jdk14"
   exit 7
 fi
 
@@ -22,6 +22,11 @@ cd $JENKINS_HOME/specjbb_scripts
 
 tar czf - runscripts | ssh ${JBB_REMOTE} "mkdir -p ${JBB_RUN_ROOT}/${JOB_NAME}; cd ${JBB_RUN_ROOT}/${JOB_NAME} && tar xzvf -"
 scp $JENKINS_HOME/specjbb_scripts/bin/specjbb.py $JBB_REMOTE:${JBB_RUN_ROOT}/${JOB_NAME}
+if [ -f $JENKINS_HOME/specjbb_scripts/job_scripts/${JOB_NAME}/options.sh ]
+then
+    echo "Warning: Overriding default options.sh file with JOB specific one"
+    scp $JENKINS_HOME/specjbb_scripts/job_scripts/${JOB_NAME}/options.sh $JBB_REMOTE:${JBB_RUN_ROOT}/${JOB_NAME}/runscripts
+fi    
 
 # Guess jdk image and copy it to remote machine
 if [ -f ${JDK_WORKSPACE_ROOT}/${_jdk_workspace}/build/linux-aarch64-server-release/images/jdk/bin/java ]
@@ -35,7 +40,7 @@ fi
   
 if [ ! -f ${_jdk}/bin/java ]
 then 
-  echo "No java executable found"
+  echo "Error: No java executable found"
   exit 255
 fi  
 
