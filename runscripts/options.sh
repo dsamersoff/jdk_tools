@@ -1,5 +1,5 @@
 #!/bin/bash
-OPT_VERSION="2.01 2020-04-15"
+OPT_VERSION="2.02 2020-09-04"
 
 # JAVA_HOME and JBB_HOME 
 # that comes from the environment
@@ -14,6 +14,11 @@ if [ "x$JBB_HOME" = "x" ]
 then
 JBB_HOME="/opt/dsamersoff/specjbb2015-1.03a"
 fi
+
+# Use tail -f --pid=${pid} to display controller log
+# Usefull in some cases, i.e. under jenkins 
+# but might cause the script to stuck
+TAIL_WAIT=Yes
 
 # Number of Groups (TxInjectors mapped to Backend) to expect
 # Support 0, 1, 2, 4 groups. 0 means composite

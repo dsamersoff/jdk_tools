@@ -1,5 +1,13 @@
 #!/bin/sh
-source $JENKINS_HOME/job_scripts/common/config.sh
+
+VERSION="2.01 2020-09-04"
+
+# Load configuration
+source $JENKINS_HOME/specjbb_scripts/job_scripts/config.sh
+if [ -f $JENKINS_HOME/specjbb_scripts/job_scripts/${JOB_NAME}/config.sh ]
+then
+  source $JENKINS_HOME/specjbb_scripts/job_scripts/${JOB_NAME}/config.sh
+fi
 
 if [ "x$1" = "x" ]
 then
@@ -7,9 +15,11 @@ then
   exit 7
 fi
 
-cd ${JDK_WORKSPACE_ROOT}
-/bin/sh -xe $JENKINS_HOME/job_scripts/common/buildscripts/jdk_update.sh $1
+_jdk_workspace=$1
 
-cd ${JDK_WORKSPACE_ROOT}/$1
-/bin/sh -xe $JENKINS_HOME/job_scripts/common/buildscripts/jdk_build.sh --product 
+cd ${JDK_WORKSPACE_ROOT}
+/bin/sh -xe $JENKINS_HOME/specjbb_scripts/buildscripts/jdk_update.sh ${_jdk_workspace}
+
+cd ${JDK_WORKSPACE_ROOT}/${_jdk_workspace}
+/bin/sh -xe $JENKINS_HOME/specjbb_scripts/buildscripts/jdk_build.sh --product 
 make CONF=release images

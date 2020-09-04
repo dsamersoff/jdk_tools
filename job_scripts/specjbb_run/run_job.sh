@@ -1,6 +1,13 @@
 #!/bin/sh
 
-source $JENKINS_HOME/job_scripts/common/config.sh
+VERSION="2.01 2020-09-04"
+
+# Load configuration
+source $JENKINS_HOME/specjbb_scripts/job_scripts/config.sh
+if [ -f $JENKINS_HOME/specjbb_scripts/job_scripts/${JOB_NAME}/config.sh ]
+then
+  source $JENKINS_HOME/specjbb_scripts/job_scripts/${JOB_NAME}/config.sh
+fi
 
 if [ "x$1" = "x" ]
 then
@@ -11,13 +18,12 @@ fi
 _jdk_workspace=$1
 
 # Setup environment on the remote machine
-cd $JENKINS_HOME/job_scripts/common
+cd $JENKINS_HOME/specjbb_scripts
 
 tar czf - runscripts | ssh ${JBB_REMOTE} "mkdir -p ${JBB_RUN_ROOT}/${JBB_RUN_NAME}; cd ${JBB_RUN_ROOT}/${JBB_RUN_NAME} && tar xzvf -"
-scp $JENKINS_HOME/job_scripts/common/specjbb.py $JBB_REMOTE:${JBB_RUN_ROOT}/${JBB_RUN_NAME}
+scp $JENKINS_HOME/specjbb_scripts/bin/specjbb.py $JBB_REMOTE:${JBB_RUN_ROOT}/${JBB_RUN_NAME}
 
 # Guess jdk image and copy it to remote machine
-
 if [ -f ${JDK_WORKSPACE_ROOT}/${_jdk_workspace}/build/linux-aarch64-server-release/images/jdk/bin/java ]
 then
    _jdk=${JDK_WORKSPACE_ROOT}/${_jdk_workspace}/build/linux-aarch64-server-release/images/jdk

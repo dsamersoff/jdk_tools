@@ -72,14 +72,8 @@ function run_group() {
 }
 
 ###############################################################################
-# This benchmark requires a JDK7 compliant Java VM.  If such a JVM is not on
-# your path already you must set the JAVA environment variable to point to
-# where the 'java' executable can be found.
-#
-# If you are using a JDK9 (or later) Java VM, see the FAQ at:
-#                       https://spec.org/jbb2015/docs/faq.html
-# and the Known Issues document at:
-#                       https://spec.org/jbb2015/docs/knownissues.html
+# This benchmark requires a JDK10+ Java VM.
+# Check options.sh file for benchmark parameters and set_system.sh for OS tuning
 ###############################################################################
 
 echo "RunMe $VERSION Numa: $NUMA Pages: $PAGES ($mem_max/$mem_young) GROUPS: $GROUP_COUNT"
@@ -171,8 +165,13 @@ for ((n=1; $n<=$NUM_OF_RUNS; n=$n+1)); do
 
         echo
         echo "SPECjbb2015 is running..."
-        echo "Please monitor $result/controller.out for progress"
-        wait $CTRL_PID
+        if [ "x${TAIL_WAIT}" = "xYes" ]
+        then
+            tail --pid=${CTRL_PID} -f $result/controller.out
+        else  
+            echo "Please monitor $result/controller.out for progress"
+            wait $CTRL_PID
+        fi    
         echo
         echo "Controller has stopped"
 
@@ -197,8 +196,13 @@ for ((n=1; $n<=$NUM_OF_RUNS; n=$n+1)); do
         echo -e "\t$BE_NAME PID = $BE_PID"
         echo
         echo "SPECjbb2015 is running..."
-        echo "Please monitor $result/${BE_NAME}.log for progress"
-        wait $BE_PID
+        if [ "x${TAIL_WAIT}" = "xYes" ]
+        then
+            tail --pid=${BE_PID} -f $result/${BE_NAME}.log
+        else
+            echo "Please monitor $result/${BE_NAME}.log for progress"
+            wait $BE_PID
+        fi
     fi       
 
     echo "SPECjbb2015 has finished"
