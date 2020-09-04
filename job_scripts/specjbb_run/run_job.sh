@@ -21,6 +21,7 @@ _jdk_workspace=$1
 cd $JENKINS_HOME/specjbb_scripts
 
 tar czf - runscripts | ssh ${JBB_REMOTE} "mkdir -p ${JBB_RUN_ROOT}/${JBB_RUN_NAME}; cd ${JBB_RUN_ROOT}/${JBB_RUN_NAME} && tar xzvf -"
+chmod a+x $JENKINS_HOME/specjbb_scripts/bin/specjbb.py 
 scp $JENKINS_HOME/specjbb_scripts/bin/specjbb.py $JBB_REMOTE:${JBB_RUN_ROOT}/${JBB_RUN_NAME}
 
 # Guess jdk image and copy it to remote machine

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION="2.05 2020-08-27"
+VERSION="2.06 2020-09-04"
 
 ###############################################################################
 # Sample script for running SPECjbb2015 in MultiJVM mode.
@@ -12,7 +12,7 @@ VERSION="2.05 2020-08-27"
 # Number of successive runs
 if [ "x$1" == "x" ]
 then	
-    NUM_OF_RUNS=4
+    NUM_OF_RUNS=1
 else
     NUM_OF_RUNS=$1
 fi
@@ -167,7 +167,8 @@ for ((n=1; $n<=$NUM_OF_RUNS; n=$n+1)); do
         echo "SPECjbb2015 is running..."
         if [ "x${TAIL_WAIT}" = "xYes" ]
         then
-            tail --pid=${CTRL_PID} -f $result/controller.out
+            echo "Monitoring $result/controller.out for progress"
+            tail --pid=${CTRL_PID} -f ./controller.out
         else  
             echo "Please monitor $result/controller.out for progress"
             wait $CTRL_PID
@@ -198,7 +199,8 @@ for ((n=1; $n<=$NUM_OF_RUNS; n=$n+1)); do
         echo "SPECjbb2015 is running..."
         if [ "x${TAIL_WAIT}" = "xYes" ]
         then
-            tail --pid=${BE_PID} -f $result/${BE_NAME}.log
+            echo "Monitoring $result/${BE_NAME}.log for progress"
+            tail --pid=${BE_PID} -f ./${BE_NAME}.log
         else
             echo "Please monitor $result/${BE_NAME}.log for progress"
             wait $BE_PID
