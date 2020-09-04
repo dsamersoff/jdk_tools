@@ -12,9 +12,9 @@ VERSION="2.05 2020-08-27"
 # Number of successive runs
 if [ "x$1" == "x" ]
 then	
-  NUM_OF_RUNS=4
+    NUM_OF_RUNS=4
 else
-  NUM_OF_RUNS=$1
+    NUM_OF_RUNS=$1
 fi
 
 script_path=$(cd "$(dirname "$0")"; pwd)
@@ -44,9 +44,9 @@ function run_group() {
 
     if [ "x$NUMA" = "xYes" ]
     then
-      numactl --cpunodebind=$cpunode --localalloc $CMD_TI > $TI_NAME.log 2>&1 &
+        numactl --cpunodebind=$cpunode --localalloc $CMD_TI > $TI_NAME.log 2>&1 &
     else  
-      $CMD_TI > $TI_NAME.log 2>&1 &
+        $CMD_TI > $TI_NAME.log 2>&1 &
     fi  
     echo -e "\t$TI_NAME PID = $!"
 
@@ -62,9 +62,9 @@ function run_group() {
 
     if [ "x$NUMA" = "xYes" ]
     then
-      numactl --cpunodebind=$cpunode --localalloc $CMD_BE > $BE_NAME.log 2>&1 &
+        numactl --cpunodebind=$cpunode --localalloc $CMD_BE > $BE_NAME.log 2>&1 &
     else
-      $CMD_BE > $BE_NAME.log 2>&1 &
+        $CMD_BE > $BE_NAME.log 2>&1 &
     fi  
 
     echo -e "\t$BE_NAME PID = $!"
@@ -111,100 +111,100 @@ if [ $? -ne 0 ]; then
 fi
 
 if [ -e $script_path/set_system.sh ]; then
-   echo -e "\nSet system configuration"
-   echo "FILE: $script_path/set_system.sh"
-   . $script_path/set_system.sh
-   echo ""
+    echo -e "\nSet system configuration"
+    echo "FILE: $script_path/set_system.sh"
+    . $script_path/set_system.sh
+    echo ""
 fi  
 
 for ((n=1; $n<=$NUM_OF_RUNS; n=$n+1)); do
 
-  # Create result directory                
-  timestamp=$(date '+%y-%m-%d_%H%M%S')
-  result=./$timestamp
-  mkdir $result
+    # Create result directory                
+    timestamp=$(date '+%y-%m-%d_%H%M%S')
+    result=./$timestamp
+    mkdir $result
 
-  # Copy current config to the result directory
-  cp -r ${JBB_HOME}/config $result
+    # Copy current config to the result directory
+    cp -r ${JBB_HOME}/config $result
 
-  cd $result
+    cd $result
 
-  # Save run configuration
-  cp /proc/meminfo .
-  cp /proc/cpuinfo .
-  cp /proc/version .
+    # Save run configuration
+    cp /proc/meminfo .
+    cp /proc/cpuinfo .
+    cp /proc/version .
 
-  if [ -e $script_path/options.txt ]; then
-     cp $script_path/options.txt .
-  fi
-
-  cp $script_path/options.sh .
-  cp $script_path/set_system.sh .
-  cp $script_path/README.md .
-
-  echo "Run $n: $timestamp"
-
-  # Support 1, 2 and 4 groups on 2 sockets
-  # - 4 groups on 1 socket and 3 groups doesn't have sence
-  # - run composite for 0 groups
-
-  if [ $GROUP_COUNT -ge 1 ]
-  then 	  
-     echo "Launching SPECjbb2015 in MultiJVM mode..."
-     echo
-     echo "Start Controller JVM"
-     $JAVA $JAVA_OPTS_C $SPEC_OPTS_C -jar ${JBB_HOME}/specjbb2015.jar -m MULTICONTROLLER $MODE_ARGS_C 2>controller.log > controller.out &
-     CTRL_PID=$!
-     echo "Controller PID = $CTRL_PID"
-     sleep 5
-
-     run_group 0 0
-     if [ $GROUP_COUNT -ge 2 ]
-     then	  
-       run_group 1 1
-     fi
-     if [ $GROUP_COUNT -ge 4 ]
-     then	  
-       run_group 2 0
-       run_group 3 1
-     fi
-
-     echo
-     echo "SPECjbb2015 is running..."
-     echo "Please monitor $result/controller.out for progress"
-     wait $CTRL_PID
-     echo
-     echo "Controller has stopped"
-
-  else
-    echo "Launching SPECjbb2015 in CompositeJVM mode..."
-    if [ "x$NUMA" = "xYes" ]
-    then
-      echo "Warning! Composite will be bound to socket 0"
+    if [ -e $script_path/options.txt ]; then
+        cp $script_path/options.txt .
     fi
-    echo
-    BE_NAME="Composite"
-    DEBUG_OPTS_BE="-Xlog:gc=debug,heap*=debug,phases*=debug,gc+age=debug:${BE_NAME}.gc.log"
-    CMD_BE="$JAVA $JAVA_OPTS_BE $DEBUG_OPTS_BE $SPEC_OPTS_C $SPEC_OPTS_BE -jar ${JBB_HOME}/specjbb2015.jar -m COMPOSITE $MODE_ARGS_BE"
-    echo $CMD_BE > ${BE_NAME}.cmdline.txt
-    if [ "x$NUMA" = "xYes" ]
-    then
-      numactl --cpunodebind=0 --localalloc $CMD_BE > $BE_NAME.log 2>&1 &
-    else
-      $CMD_BE > $BE_NAME.log 2>&1 &
-    fi  
-    BE_PID=$!
-    echo -e "\t$BE_NAME PID = $BE_PID"
-    echo
-    echo "SPECjbb2015 is running..."
-    echo "Please monitor $result/${BE_NAME}.log for progress"
-    wait $BE_PID
-  fi       
 
-  echo "SPECjbb2015 has finished"
-  echo
+    cp $script_path/options.sh .
+    cp $script_path/set_system.sh .
+    cp $script_path/README.md .
+
+    echo "Run $n: $timestamp"
+
+    # Support 1, 2 and 4 groups on 2 sockets
+    # - 4 groups on 1 socket and 3 groups doesn't have sence
+    # - run composite for 0 groups
+
+    if [ $GROUP_COUNT -ge 1 ]
+    then 	  
+        echo "Launching SPECjbb2015 in MultiJVM mode..."
+        echo
+        echo "Start Controller JVM"
+        $JAVA $JAVA_OPTS_C $SPEC_OPTS_C -jar ${JBB_HOME}/specjbb2015.jar -m MULTICONTROLLER $MODE_ARGS_C 2>controller.log > controller.out &
+        CTRL_PID=$!
+        echo "Controller PID = $CTRL_PID"
+        sleep 5
+
+        run_group 0 0
+        if [ $GROUP_COUNT -ge 2 ]
+        then	  
+            run_group 1 1
+        fi
+        if [ $GROUP_COUNT -ge 4 ]
+        then	  
+            run_group 2 0
+            run_group 3 1
+        fi
+
+        echo
+        echo "SPECjbb2015 is running..."
+        echo "Please monitor $result/controller.out for progress"
+        wait $CTRL_PID
+        echo
+        echo "Controller has stopped"
+
+    else
+        echo "Launching SPECjbb2015 in CompositeJVM mode..."
+        if [ "x$NUMA" = "xYes" ]
+        then
+            echo "Warning! Composite will be bound to socket 0"
+        fi
+        echo
+        BE_NAME="Composite"
+        DEBUG_OPTS_BE="-Xlog:gc=debug,heap*=debug,phases*=debug,gc+age=debug:${BE_NAME}.gc.log"
+        CMD_BE="$JAVA $JAVA_OPTS_BE $DEBUG_OPTS_BE $SPEC_OPTS_C $SPEC_OPTS_BE -jar ${JBB_HOME}/specjbb2015.jar -m COMPOSITE $MODE_ARGS_BE"
+        echo $CMD_BE > ${BE_NAME}.cmdline.txt
+        if [ "x$NUMA" = "xYes" ]
+        then
+            numactl --cpunodebind=0 --localalloc $CMD_BE > $BE_NAME.log 2>&1 &
+        else
+            $CMD_BE > $BE_NAME.log 2>&1 &
+        fi  
+        BE_PID=$!
+        echo -e "\t$BE_NAME PID = $BE_PID"
+        echo
+        echo "SPECjbb2015 is running..."
+        echo "Please monitor $result/${BE_NAME}.log for progress"
+        wait $BE_PID
+    fi       
+
+    echo "SPECjbb2015 has finished"
+    echo
   
-  cd ..
+    cd ..
 
 done
 
