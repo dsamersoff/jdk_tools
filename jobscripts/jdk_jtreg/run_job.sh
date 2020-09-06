@@ -21,7 +21,7 @@ then
     exit 7
 fi
 
-export JT_JAVA=${JTREG_JAVA}
+export JT_JAVA="${JTREG_JDK}/bin/java"
 
 _jdk_workspace=$1
 _test_dir=$2
@@ -33,7 +33,7 @@ cd ${JDK_WORKSPACE_ROOT}/${_jdk_workspace}
 /bin/sh -xe $JENKINS_HOME/specjbb_scripts/buildscripts/jdk_build.sh --fastdebug 
 make CONF=fastdebug images test-bundles
 
-if [ $! -ne 0 ]
+if [ $? -ne 0 ]
 then
     echo "Error: Build failed, exiting"
     exit 255
@@ -58,7 +58,7 @@ then
     exit
 fi
 
-cd ${JDK_WORKSPACE_ROOT}/${JTREG_TEST_ROOT}/${_test_dir}
+cd ${JDK_WORKSPACE_ROOT}/${_jdk_workspace}/${JTREG_TEST_ROOT}/${_test_dir}
 
 ${JTREG_HOME}/bin/jtreg \
    -J-Djavatest.maxOutputSize=9000000 \
@@ -69,5 +69,6 @@ ${JTREG_HOME}/bin/jtreg \
    -workDir:${WORKSPACE}/JTwork \
    -timeoutFactor:6 \
    -nativepath:${_nativepath} \
-   -jdk "${_testjava}" 
+   -jdk "${_testjava}"  \
+   .
    

@@ -28,10 +28,10 @@ export JBB_HOME="/home/dsamersoff/specjbb2015-1.03a"
 
 # JTEG support
 # Stable JDK to run jtreg it self
-export JTREG_JAVA="/export/dsamersoff/bin/java"
+export JTREG_JDK="/opt/dsamersoff/jdk14"
 
 # Path to tests relative to workspace root
 export JTREG_TEST_ROOT="test/hotspot/jtreg"
 
 # Path to jtreg
-export JTREG_HOME="/export/dsamersoff/jtreg"
+export JTREG_HOME="/opt/dsamersoff/jtreg"
