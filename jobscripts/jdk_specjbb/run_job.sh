@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION="2.04 2020-09-04"
+VERSION="2.05 2020-09-06"
 
 # Load configuration
 source $JENKINS_HOME/specjbb_scripts/jobscripts/config.sh
