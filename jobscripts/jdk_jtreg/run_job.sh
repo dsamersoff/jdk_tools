@@ -31,7 +31,7 @@ _test_dir=$2
 
 cd ${JDK_WORKSPACE_ROOT}/${_jdk_workspace}
 /bin/sh -xe $JENKINS_HOME/specjbb_scripts/buildscripts/jdk_build.sh --fastdebug 
-make CONF=fastdebug images test_bundles
+make CONF=fastdebug images test-bundles
 
 if [ $! -ne 0 ]
 then
