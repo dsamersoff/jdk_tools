@@ -21,10 +21,13 @@ then
     exit 7
 fi
 
+export JT_JAVA=${JTREG_JAVA}
+
 _jdk_workspace=$1
 _test_dir=$2
 
-/bin/sh -xe $JENKINS_HOME/specjbb_scripts/buildscripts/jdk_update.sh ${_jdk_workspace}
+# JTREG job shouldn't perform update to produce stable results
+# /bin/sh -xe $JENKINS_HOME/specjbb_scripts/buildscripts/jdk_update.sh ${_jdk_workspace}
 
 cd ${JDK_WORKSPACE_ROOT}/${_jdk_workspace}
 /bin/sh -xe $JENKINS_HOME/specjbb_scripts/buildscripts/jdk_build.sh --fastdebug 
@@ -55,15 +58,15 @@ then
     exit
 fi
 
-cd ${JDK_WORKSPACE_ROOT}/${JT_TEST_ROOT}/${_test_dir}
+cd ${JDK_WORKSPACE_ROOT}/${JTREG_TEST_ROOT}/${_test_dir}
 
-${JT_HOME}/bin/jtreg \
+${JTREG_HOME}/bin/jtreg \
    -J-Djavatest.maxOutputSize=9000000 \
    -verbose:all \
    -ignore:run \
    -vmoption:-Xmx2048m\
-   -reportDir:/tmp/jtreg-dms/JTreport \
-   -workDir:/tmp/jtreg-dms/JTwork \
+   -reportDir:${WORKSPACE}/JTreport \
+   -workDir:${WORKSPACE}/JTwork \
    -timeoutFactor:6 \
    -nativepath:${_nativepath} \
    -jdk "${_testjava}" 
