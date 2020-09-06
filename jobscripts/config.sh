@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION="2.01 2020-09-06"
+VERSION="2.02 2020-09-06"
 
 # Directory to drop jdk sources to
 export JDK_WORKSPACE_ROOT=/home/dsamersoff/workspaces
@@ -26,3 +26,12 @@ export JBB_REMOTE_ROOT=/home/dsamersoff/specjbb_work
 # Location of specjbb distro on the remote machine
 export JBB_HOME="/home/dsamersoff/specjbb2015-1.03a"
 
+# JTEG support
+# Stable JDK to run jtreg it self
+export JT_JAVA="/export/dsamersoff/bin/java"
+
+# Path to tests relative to workspace root
+export JT_TEST_ROOT="test/hotspot/jtreg"
+
+# Path to jtreg
+export JT_HOME="/export/dsamersoff/jtreg"
