@@ -6,6 +6,7 @@ VERSION="2.04 2020-09-04"
 source $JENKINS_HOME/specjbb_scripts/jobscripts/config.sh
 if [ -f $JENKINS_HOME/specjbb_scripts/jobscripts/${JOB_NAME}/config.sh ]
 then
+  echo "Warning: Loading job-specific config"
   source $JENKINS_HOME/specjbb_scripts/jobscripts/${JOB_NAME}/config.sh
 fi
 
@@ -16,17 +17,17 @@ then
 fi
 
 _jdk_workspace=$1
+_jbb_remote="${JBB_REMOTE_USER}@${JBB_REMOTE_HOST}"
+_cwd=`pwd`
 
 # Setup environment on the remote machine
 cd $JENKINS_HOME/specjbb_scripts
+tar czf - runscripts | ssh ${_jbb_remote} "mkdir -p ${JBB_REMOTE_ROOT}/${BUILD_TAG}; cd ${JBB_REMOTE_ROOT}/${BUILD_TAG} && tar xzvf -"
 
-tar czf - runscripts | ssh ${JBB_REMOTE} "mkdir -p ${JBB_RUN_ROOT}/${JOB_NAME}; cd ${JBB_RUN_ROOT}/${JOB_NAME} && tar xzvf -"
-scp $JENKINS_HOME/specjbb_scripts/bin/specjbb.py $JBB_REMOTE:${JBB_RUN_ROOT}/${JOB_NAME}
-
-if [ -f $JENKINS_HOME/specjbb_scripts/jobscripts/${JOB_NAME}/options.sh ]
+if [ -f $JENKINS_HOME/specjbb_scripts/jobscripts/${BUILD_TAG}/options.sh ]
 then
     echo "Warning: Overriding default options.sh file with JOB specific one"
-    scp $JENKINS_HOME/specjbb_scripts/jobscripts/${JOB_NAME}/options.sh $JBB_REMOTE:${JBB_RUN_ROOT}/${JOB_NAME}/runscripts
+    scp $JENKINS_HOME/specjbb_scripts/jobscripts/${BUILD_TAG}/options.sh $_jbb_remote:${JBB_REMOTE_ROOT}/${BUILD_TAG}/runscripts
 fi    
 
 # Guess jdk image and copy it to remote machine
@@ -45,24 +46,35 @@ then
   exit 255
 fi  
 
-echo "Copying ${_jdk} to ${JBB_REMOTE}:${JBB_RUN_ROOT}/${JOB_NAME}/${_jdk_name}"
+echo "Copying ${_jdk} to ${_jbb_remote}:${JBB_REMOTE_ROOT}/${BUILD_TAG}/${_jdk_name}"
 
 cd ${_jdk}/..
-tar czf - ${_jdk_name} | ssh ${JBB_REMOTE} "cd ${JBB_RUN_ROOT}/${JOB_NAME} && tar xzf -"
+tar czf - ${_jdk_name} | ssh ${_jbb_remote} "cd ${JBB_REMOTE_ROOT}/${BUILD_TAG} && tar xzf -"
 
 # Create a run script on the remote side, that sets some environment variables
-cat  | ssh ${JBB_REMOTE} "cd ${JBB_RUN_ROOT}/${JOB_NAME} && tee runme_tmp.sh" << EOM 
-export JAVA_HOME=${JBB_RUN_ROOT}/${JOB_NAME}/${_jdk_name}
+cat  | ssh ${_jbb_remote} "cd ${JBB_REMOTE_ROOT}/${BUILD_TAG} && tee runme_tmp.sh" << EOM 
+export JAVA_HOME=${JBB_REMOTE_ROOT}/${BUILD_TAG}/${_jdk_name}
 export JBB_HOME=${JBB_HOME} 
-export JOB_NAME=${JOB_NAME}
+export BUILD_TAG=${BUILD_TAG}
 cd runscripts 
-echo ${JOB_NAME} > README.md
+echo ${BUILD_TAG} > README.md
 /bin/sh ./runme.sh
-python3 ${JBB_RUN_ROOT}/${JOB_NAME}/specjbb.py -o ${JOB_NAME}.xlsx
 EOM
 
 # Run specjbb
-ssh -n $JBB_REMOTE "cd ${JBB_RUN_ROOT}/${JOB_NAME} && sudo /bin/sh ./runme_tmp.sh"
+ssh -n $_jbb_remote "cd ${JBB_REMOTE_ROOT}/${BUILD_TAG} && sudo /bin/sh ./runme_tmp.sh"
 
 # Copy results back to jenkins machine
-scp -r ${JBB_REMOTE}:${JBB_RUN_ROOT}/${JOB_NAME}/runscripts/${JOB_NAME}.xlsx .
+ssh ${_jbb_remote} "cd ${JBB_REMOTE_ROOT}/${BUILD_TAG} && tar czf - runscripts" | tar xzvf -
+python3 $JENKINS_HOME/specjbb_scripts/bin/specjbb.py -o ${BUILD_TAG}.xlsx
+
+# Remove run directory on remote machine
+if [ "x${JBB_REMOTE_CLEANUP}" = "xYes" ]
+then
+   echo "Warning! Removing remote run dir ${JBB_REMOTE_ROOT}/${BUILD_TAG}"
+   ssh -n $_jbb_remote "cd ${JBB_REMOTE_ROOT} && sudo chown -R ${JBB_REMOTE_USER} ${BUILD_TAG}"
+   ssh -n $_jbb_remote "cd ${JBB_REMOTE_ROOT} && rm -rf ${BUILD_TAG}"
+fi
+
+echo "ALL Done. Check ${_cwd}"
+
