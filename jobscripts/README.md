@@ -1,8 +1,5 @@
 ## Jenkins Support How-to
 
-*** Warning! No job interference and congestion control are implemented, attempt 
-    to run multiple jobs at the same time could lead to an inpredictable result***
-
 ### Prerequisites
 
 1. Jenkins machine should be capable to build openjdk and run jtreg, 
@@ -23,8 +20,17 @@
  3. Copy or link specjbb_scripts folder to the $JENKINS_HOME
 
  4. Import all jobs using jenkins-cli
-    java -jar jenkins-cli.jar  -auth '<user>':'<pass>' -s http://<jenkins-url> create-job <job-name> < <job-name>/config.xml
 
+```
+    java -jar jenkins-cli.jar  -auth '<user>':'<pass>' -s http://<jenkins-url> create-job <job-name> < <job-name>/config.xml
+```
+
+### Limitations
+ 1. No job interference and congestion control are implemented, attempt 
+    to run multiple jobs at the same time could lead to an inpredictable result
+
+ 2. Specjbb health status is not checked i.e. ever if specjbb crashes for soem reason, 
+    job will marked as succesfull
 
 ### Job tuning
  1. Adjust specjbb_scripts/jobscripts/config.sh to match your jenkins and remote machine settings
@@ -34,3 +40,4 @@
 
  3. If you need to support more than one remote machine create a separate folder inside jobscripts, 
     copy config.sh and options.sh there and change it as necessary
+
