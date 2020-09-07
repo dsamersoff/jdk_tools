@@ -169,10 +169,10 @@ for ((n=1; $n<=$NUM_OF_RUNS; n=$n+1)); do
         then
             echo "Monitoring $result/controller.out for progress"
             tail --pid=${CTRL_PID} -f ./controller.out
-        else  
+        else
             echo "Please monitor $result/controller.out for progress"
             wait $CTRL_PID
-        fi    
+        fi
         echo
         echo "Controller has stopped"
 
