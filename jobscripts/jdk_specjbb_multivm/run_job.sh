@@ -24,10 +24,10 @@ _cwd=`pwd`
 cd $JENKINS_HOME/specjbb_scripts
 tar czf - runscripts | ssh ${_jbb_remote} "mkdir -p ${JBB_REMOTE_ROOT}/${BUILD_TAG}; cd ${JBB_REMOTE_ROOT}/${BUILD_TAG} && tar xzvf -"
 
-if [ -f $JENKINS_HOME/specjbb_scripts/jobscripts/${BUILD_TAG}/options.sh ]
+if [ -f $JENKINS_HOME/specjbb_scripts/jobscripts/${JOB_NAME}/options.sh ]
 then
     echo "Warning: Overriding default options.sh file with JOB specific one"
-    scp $JENKINS_HOME/specjbb_scripts/jobscripts/${BUILD_TAG}/options.sh $_jbb_remote:${JBB_REMOTE_ROOT}/${BUILD_TAG}/runscripts
+    scp $JENKINS_HOME/specjbb_scripts/jobscripts/${JOB_NAME}/options.sh $_jbb_remote:${JBB_REMOTE_ROOT}/${BUILD_TAG}/runscripts
 fi    
 
 # Guess jdk image and copy it to remote machine
