@@ -143,7 +143,7 @@ for ((n=1; $n<=$NUM_OF_RUNS; n=$n+1)); do
     # - run composite for 0 groups
 
     if [ $GROUP_COUNT -ge 1 ]
-    then 	  
+    then
         echo "Launching SPECjbb2015 in MultiJVM mode..."
         echo
         echo "Start Controller JVM"
@@ -154,11 +154,11 @@ for ((n=1; $n<=$NUM_OF_RUNS; n=$n+1)); do
 
         run_group 0 0
         if [ $GROUP_COUNT -ge 2 ]
-        then	  
+	then
             run_group 1 1
         fi
         if [ $GROUP_COUNT -ge 4 ]
-        then	  
+	then
             run_group 2 0
             run_group 3 1
         fi
@@ -192,7 +192,7 @@ for ((n=1; $n<=$NUM_OF_RUNS; n=$n+1)); do
             numactl --cpunodebind=0 --localalloc $CMD_BE > $BE_NAME.log 2>&1 &
         else
             $CMD_BE > $BE_NAME.log 2>&1 &
-        fi  
+        fi
         BE_PID=$!
         echo -e "\t$BE_NAME PID = $BE_PID"
         echo
@@ -205,7 +205,7 @@ for ((n=1; $n<=$NUM_OF_RUNS; n=$n+1)); do
             echo "Please monitor $result/${BE_NAME}.log for progress"
             wait $BE_PID
         fi
-    fi       
+    fi
 
     echo "SPECjbb2015 has finished"
     echo
