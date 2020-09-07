@@ -29,7 +29,7 @@ TI_JVM_COUNT=1
 
 # Memory usage
 # Page number is not adjusted to group count and passed as is. Take care.
-PAGES=460
+PAGES=200
 
 # Use or not numactl 
 # 1 or 2 sockets supported
