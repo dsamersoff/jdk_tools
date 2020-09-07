@@ -1,5 +1,8 @@
 ## Jenkins Support How-to
 
+*** Warning! No job interference and congestion control are implemented, attempt 
+    to run multiple jobs at the same time could lead to an inpredictable result***
+
 ### Prerequisites
 
 1. Jenkins machine should be capable to build openjdk and run jtreg, 
@@ -11,7 +14,8 @@
 3. Key-based ssh auth between two machines is working,
    passwd auth for remote user is turned-off
 
- ### Setup
+
+### Setup
  1. Install and run minimal jenkins 
 
  2. Checkout git workspace
@@ -21,7 +25,8 @@
  4. Import all jobs using jenkins-cli
     java -jar jenkins-cli.jar  -auth '<user>':'<pass>' -s http://<jenkins-url> create-job <job-name> < <job-name>/config.xml
 
- ### Job tuning
+
+### Job tuning
  1. Adjust specjbb_scripts/jobscripts/config.sh to match your jenkins and remote machine settings
  
  2. Adjust jdk_specjbb_multivm/options.sh and jdk_specjbb_composite/options.sh to set desired specjbb option, 
