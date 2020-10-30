@@ -1,24 +1,27 @@
 #!/bin/bash
-OPT_VERSION="2.02 2020-09-04"
+OPT_VERSION="2.03 2020-10-30"
 
 # JAVA_HOME and JBB_HOME 
-# that comes from the environment
-# overrrides default values
+# that comes from the environment overrrides default values
 
 if [ "x$JAVA_HOME" = "x" ]
 then
-JAVA_HOME="/opt/dsamersoff/jdk-14"
+JAVA_HOME="/opt/jdk"
 fi
 
 if [ "x$JBB_HOME" = "x" ]
 then
-JBB_HOME="/opt/dsamersoff/specjbb2015-1.03a"
+JBB_HOME="/opt/specjbb2015-1.03a"
 fi
 
 # Use tail -f --pid=${pid} to display controller log
-# Usefull in some cases, i.e. under jenkins 
-# but might cause the script to stuck
+# instead of shell wait. 
+# Handy, especially under jenkins, but may cause the script to stuck
 TAIL_WAIT=Yes
+
+# Check active usesr, docker presence and other conditions that may affect results
+# To run under jenkins you may need to disable this check
+VALIDATE_ENV=Yes
 
 # Number of Groups (TxInjectors mapped to Backend) to expect
 # Support 0, 1, 2, 4 groups. 0 means composite
@@ -68,15 +71,13 @@ SPEC_OPTS_BE="\
 JAVA_OPTS_COMMON="\
         -server \
         -XX:+PrintFlagsFinal \
+        -XX:+UseParallelGC \
 "	
-
 JAVA_OPTS_TUNING="\
         -Xnoclassgc \
-        -XX:+UseParallelGC \
         -XX:-UseAdaptiveSizePolicy \
         -XX:+AlwaysPreTouch \
         -XX:+UseBiasedLocking \
-        -XX:+UseLSE \
         -XX:-UsePerfData \
         -XX:-UseNUMA \
         -XX:-UseNUMAInterleaving \
@@ -89,7 +90,7 @@ JAVA_OPTS_TUNING="\
         -XX:MaxInlineLevel=15 \
 "
 
-
+# Not used in composite mode
 JAVA_OPTS_C="${JAVA_OPTS_COMMON} \
              -XX:ParallelGCThreads=3 \
              -Xms2g  \
@@ -119,7 +120,7 @@ JAVA_OPTS_BE="${JAVA_OPTS_COMMON} \
              -Xmn$mem_young \
              -XX:SurvivorRatio=130 \
              -XX:TargetSurvivorRatio=66 \
-             -XX:MaxTenuringThreshold=16 \
+             -XX:MaxTenuringThreshold=15 \
 "
 
 

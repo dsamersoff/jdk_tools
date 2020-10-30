@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION="2.06 2020-09-04"
+VERSION="2.07 2020-10-30"
 
 ###############################################################################
 # Sample script for running SPECjbb2015 in MultiJVM mode.
@@ -36,7 +36,12 @@ function run_group() {
 
     JVMID=tiJVM$gnum
     TI_NAME=$GROUPID.TxInjector.$JVMID
-    DEBUG_OPTS_TI="-Xlog:gc=debug,heap*=debug,phases*=debug,gc+age=debug:${TI_NAME}.gc.log"
+    if [ $JAVA_FAMILY = "JDK_8" ]
+    then
+      DEBUG_OPTS_TI="-XX:+PrintGC -XX:+PrintGCDetails -Xloggc:${TI_NAME}.gc.log"
+    else
+      DEBUG_OPTS_TI="-Xlog:gc=debug,heap*=debug,phases*=debug,gc+age=debug:${TI_NAME}.gc.log"
+    fi
 
     echo "    Start $TI_NAME"
     CMD_TI="$JAVA $JAVA_OPTS_TI $DEBUG_OPTS_TI $SPEC_OPTS_TI -jar ${JBB_HOME}/specjbb2015.jar -m TXINJECTOR -G=$GROUPID -J=$JVMID $MODE_ARGS_TI" 
@@ -54,7 +59,12 @@ function run_group() {
 
     JVMID=beJVM$gnum
     BE_NAME=$GROUPID.Backend.$JVMID
-    DEBUG_OPTS_BE="-Xlog:gc=debug,heap*=debug,phases*=debug,gc+age=debug:${BE_NAME}.gc.log"
+    if [ $JAVA_FAMILY = "JDK_8" ]
+    then
+      DEBUG_OPTS_BE="-XX:+PrintGC -XX:+PrintGCDetails -Xloggc:${BE_NAME}.gc.log"
+    else
+      DEBUG_OPTS_BE="-Xlog:gc=debug,heap*=debug,phases*=debug,gc+age=debug:${BE_NAME}.gc.log"
+    fi
 
     echo "    Start $BE_NAME"
     CMD_BE="$JAVA $JAVA_OPTS_BE $DEBUG_OPTS_BE $SPEC_OPTS_BE -jar ${JBB_HOME}/specjbb2015.jar -m BACKEND -G=$GROUPID -J=$JVMID $MODE_ARGS_BE"
@@ -72,39 +82,58 @@ function run_group() {
 }
 
 ###############################################################################
-# This benchmark requires a JDK10+ Java VM.
+# This benchmark requires a 1.8.x or 11 and later version of Java 
 # Check options.sh file for benchmark parameters and set_system.sh for OS tuning
 ###############################################################################
 
 echo "RunMe $VERSION Numa: $NUMA Pages: $PAGES ($mem_max/$mem_young) GROUPS: $GROUP_COUNT"
-
-nn=`id -u`
-if [ ${nn} != "0" ]; then
-    echo "ERROR: Should be run as root. Exiting."
-    exit 1
-fi
-
-if ps ax | grep -v grep | grep -q specjbb ; then
-    echo "SPECjbb is already running. Exiting"
-    exit 1
-fi	
-if pgrep -c java >/dev/null; then
-    echo "Warning! java is already running. Results might suffer"
-fi	
-
-if pgrep -c docker >/dev/null; then
-    echo "Warning! DOCKER is running. Results might suffer"
-fi	
-
 JAVA="$JAVA_HOME/bin/java"
-
-which $JAVA > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-    echo "ERROR: Could not find a 'java' executable. Please set the JAVA environment variable or update the PATH."
+$JAVA -version 2>&1 >/dev/null
+JAVA_FAMILY=`$JAVA -version 2>&1 >/dev/null | sed -n -e 's/.*version "1\.8\..*/JDK_8/p' -e 's/.*version "1[0-9]\..*/JDK_X/p'`
+if [ "$JAVA_FAMILY" == "" ]
+then
+    echo "ERROR: Could not determine version of 'java' executable. Exiting."
     exit 1
+else
+    echo "JAVA Family is $JAVA_FAMILY"
 fi
 
-if [ -e $script_path/set_system.sh ]; then
+if [ ! -e "$JBB_HOME/config" ]
+then
+    echo "ERROR: Can't stat '$JBB_HOME/config' check JBB_HOME."
+    exit 1
+else    
+    echo "JBB: $JBB_HOME"
+fi
+
+if [ "$VALIDATE_ENV" == "Yes" ]
+then
+    nn=`id -u`
+    if [ ${nn} != "0" ]
+    then
+        echo "ERROR: Should be run as root."
+        exit 1
+    fi
+
+    if ps ax | grep -v grep | grep -q specjbb 
+    then
+        echo "ERROR: SPECjbb is already running."
+        exit 1
+    fi	
+
+    if pgrep -c java >/dev/null
+    then
+        echo "Warning! java is already running. Results might suffer."
+    fi	
+
+    if pgrep -c docker >/dev/null
+    then
+        echo "Warning! DOCKER is running. Results might suffer."
+    fi	
+fi
+
+if [ -e $script_path/set_system.sh ]
+then
     echo -e "\nSet system configuration"
     echo "FILE: $script_path/set_system.sh"
     . $script_path/set_system.sh
@@ -128,7 +157,8 @@ for ((n=1; $n<=$NUM_OF_RUNS; n=$n+1)); do
     cp /proc/cpuinfo .
     cp /proc/version .
 
-    if [ -e $script_path/options.txt ]; then
+    if [ -e $script_path/options.txt ] 
+    then
         cp $script_path/options.txt .
     fi
 
@@ -154,11 +184,11 @@ for ((n=1; $n<=$NUM_OF_RUNS; n=$n+1)); do
 
         run_group 0 0
         if [ $GROUP_COUNT -ge 2 ]
-	then
+        then
             run_group 1 1
         fi
         if [ $GROUP_COUNT -ge 4 ]
-	then
+	    then
             run_group 2 0
             run_group 3 1
         fi
@@ -184,7 +214,12 @@ for ((n=1; $n<=$NUM_OF_RUNS; n=$n+1)); do
         fi
         echo
         BE_NAME="Composite"
-        DEBUG_OPTS_BE="-Xlog:gc=debug,heap*=debug,phases*=debug,gc+age=debug:${BE_NAME}.gc.log"
+        if [ $JAVA_FAMILY = "JDK_8" ]
+        then
+           DEBUG_OPTS_BE="-XX:+PrintGC -XX:+PrintGCDetails -Xloggc:${BE_NAME}.gc.log"
+        else
+           DEBUG_OPTS_BE="-Xlog:gc=debug,heap*=debug,phases*=debug,gc+age=debug:${BE_NAME}.gc.log"
+        fi
         CMD_BE="$JAVA $JAVA_OPTS_BE $DEBUG_OPTS_BE $SPEC_OPTS_C $SPEC_OPTS_BE -jar ${JBB_HOME}/specjbb2015.jar -m COMPOSITE $MODE_ARGS_BE"
         echo $CMD_BE > ${BE_NAME}.cmdline.txt
         if [ "x$NUMA" = "xYes" ]
