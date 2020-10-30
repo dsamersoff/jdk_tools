@@ -87,8 +87,11 @@ function run_group() {
 ###############################################################################
 
 echo "RunMe $VERSION Numa: $NUMA Pages: $PAGES ($mem_max/$mem_young) GROUPS: $GROUP_COUNT"
+
 JAVA="$JAVA_HOME/bin/java"
+echo "Using JDK: $JAVA_HOME"
 $JAVA -version 2>&1 >/dev/null
+
 JAVA_FAMILY=`$JAVA -version 2>&1 >/dev/null | sed -n -e 's/.*version "1\.8\..*/JDK_8/p' -e 's/.*version "1[0-9]\..*/JDK_X/p'`
 if [ "$JAVA_FAMILY" == "" ]
 then

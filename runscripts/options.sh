@@ -31,8 +31,11 @@ GROUP_COUNT=2
 TI_JVM_COUNT=1
 
 # Memory usage
-# Page number is not adjusted to group count and passed as is. Take care.
-PAGES=200
+# Memory is not is not adjusted to group count and passed as is. Take care.
+# Young gen pages should be less than total pages
+PAGE_SIZE=512
+PAGES=8
+YOUNG_PAGES=2
 
 # Use or not numactl 
 # 1 or 2 sockets supported
@@ -106,9 +109,9 @@ JAVA_OPTS_TI="${JAVA_OPTS_COMMON} \
 "
 
 pages=$PAGES
-page_sz=512
+page_sz=$PAGE_SIZE
 mem_max=$(($pages * $page_sz))
-mem_young=$(($mem_max - 10 * $page_sz))
+mem_young=$(($YOUNG_PAGES * $page_sz))
 mem_max+="m"
 mem_young+="m"
 
@@ -137,7 +140,9 @@ MODE_ARGS_BE=""
 echo "VERSION: $OPT_VERSION" > options.txt
 echo "JAVA_HOME: $JAVA_HOME" >> options.txt
 echo "GROUP_COUNT: $GROUP_COUNT" >> options.txt
+echo "PAGE_SIZE: $PAGE_SIZE" >> options.txt
 echo "PAGES: $PAGES" >> options.txt
+echo "YOUNG PAGES: $YOUNG_PAGES" >> options.txt
 echo "NUMA: $NUMA" >> options.txt
 echo "YOUNG: $mem_young" >> options.txt
 echo "NUM_OF_RUNS: $NUM_OF_RUNS" >> options.txt
