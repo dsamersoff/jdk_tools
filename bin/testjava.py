@@ -1,13 +1,12 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-# vim: expandtab shiftwidth=2 softtabstop=2
+#!/usr/bin/python3
 
-# version 2.01 2020-09-14
-
-import os
+import os 
+import sys
 import glob
 
 thispath = os.getcwd()
+cwd = os.getcwd()
+
 dirlist = []
 
 while True:
@@ -28,5 +27,23 @@ while True:
   if thispath == '/':
     break
 
+  """ Handle windows drive letter D:/ """
+  if len(thispath) == 3 and thispath[1] == ":":
+    break
+
+
+if len(dirlist) == 0:
+  if len(sys.argv) > 1 and sys.argv[1] == "-all":
+    print ("Nothing found")
+  sys.exit(-1)
+
+tpl = []
 for d in dirlist:
-  print(d)
+  tpl.append( (d, os.path.commonpath([cwd,d])) )
+tpl = sorted(tpl, key=lambda n: len(n[1]), reverse=True)
+
+if len(sys.argv) > 1 and sys.argv[1] == "-all":
+  for d in tpl:
+    print(d[0])
+else:
+  print(tpl[0][0])
