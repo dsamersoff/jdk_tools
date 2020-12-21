@@ -72,11 +72,11 @@ class ResultSet:
   RUN_NAME_PATTERN = re.compile(r"([A-Za-z0-9\-_]+\.)?[12][90]-[0-9]+-[0-9]+_[0-9]+")
  
   OPT_PATTERNS = { 
-          "groups" : re.compile(r"GROUP_COUNT: ([0-9]+)"),
-          "pages" : re.compile(r"PAGES: ([0-9]+)"),
-          "SurvivorRatio" : re.compile(r"JAVA_OPTS_BE: -XX:SurvivorRatio=([0-9]+)"),
-          "TargetSurvivorRatio" : re.compile(r"JAVA_OPTS_BE: -XX:TargetSurvivorRatio=([0-9]+)"),
-          "MaxTenuringThreshold" : re.compile(r"JAVA_OPTS_BE: -XX:MaxTenuringThreshold=([0-9]+)"),
+          "groups" : re.compile(r"^GROUP_COUNT: ([0-9]+)"),
+          "pages" : re.compile(r"^PAGES: ([0-9]+)"),
+          "SurvivorRatio" : re.compile(r"^JAVA_OPTS_BE: -XX:SurvivorRatio=([0-9]+)"),
+          "TargetSurvivorRatio" : re.compile(r"^JAVA_OPTS_BE: -XX:TargetSurvivorRatio=([0-9]+)"),
+          "MaxTenuringThreshold" : re.compile(r"^JAVA_OPTS_BE: -XX:MaxTenuringThreshold=([0-9]+)"),
   }
 
   def __init__ (self, prefix, run_name, filename):
