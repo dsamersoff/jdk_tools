@@ -25,6 +25,16 @@ fi
 if [ -f ./make/autoconf/version-numbers ]
 then
   . ./make/autoconf/version-numbers
+fi  
+
+if [ -f ./make/conf/version-numbers.conf ]
+then
+  . ./make/conf/version-numbers.conf 
+fi  
+
+
+if [ "x${DEFAULT_ACCEPTABLE_BOOT_VERSIONS}" != "x" ]
+then
   for jdk_ver in $DEFAULT_ACCEPTABLE_BOOT_VERSIONS
   do
     if [ -x $_jdk_collection_root/jdk${jdk_ver} ]
@@ -66,7 +76,6 @@ then
   echo "JMH to ${_jmh}" 
   configure_params="${configure_params} --with-jmh=${_jmh}"
 fi  
-
 
 # ============== VARIANTS ========================
 if [ "x${_variant}" = "xjvmci" ]

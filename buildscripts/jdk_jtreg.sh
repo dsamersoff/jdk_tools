@@ -82,7 +82,7 @@ fi
    -reportDir:/tmp/jtreg-dms/JTreport \
    -workDir:/tmp/jtreg-dms/JTwork \
    -timeoutFactor:6 \
-   -compilejdk:/opt/jdk11 \
+   -compilejdk:${COMPJAVA} \
    -nativepath:${NATIVEPATH} \
    -jdk "${TESTJAVA}" \
    ${STATUS} \
