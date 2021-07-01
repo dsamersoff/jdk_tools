@@ -33,7 +33,7 @@ export JT_JAVA=/opt/jdk/bin/java
 
 if [ "x$COMPJAVA" = "x" ]
 then
-  JAVA_FAMILY=`${TESTJAVA}/bin/java -version 2>&1 >/dev/null | sed -n -e 's/.*version "1\.8\..*/jdk8/p' -e 's/.*version "\(1[0-9]\)\..*/jdk\1/p'`
+  JAVA_FAMILY=`${TESTJAVA}/bin/java -version 2>&1 >/dev/null | sed -n -e 's/.*version "1\.8\..*/jdk8/p' -e 's/.*version "\(1[0-9]\)[\.-].*/jdk\1/p'`
 
   if [ "x$JAVA_FAMILY" = "x" ]
   then
