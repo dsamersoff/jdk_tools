@@ -12,6 +12,10 @@ _boot_jdk="/opt/jdk11"
 _pch="--disable-precompiled-headers"
 _werror="--disable-warnings-as-errors"
 
+
+# make build-microbenchmark will build build/$PROFILE/images/test/micro/benchmarks.jar
+# make test TEST="micro:java.lang.invoke"
+
 _jmh="no"
 
 # Try to guess correct boot jdk
