@@ -69,7 +69,7 @@ class ResultSet:
   PAUSE_Y_PATTERN = re.compile(r"Pause Young.* ([0-9\.]+)ms")
   PAUSE_F_PATTERN = re.compile(r"Pause Full.* ([0-9\.]+)ms")
   
-  RUN_NAME_PATTERN = re.compile(r"([A-Za-z0-9\-_]+\.)?[12][90]-[0-9]+-[0-9]+_[0-9]+")
+  RUN_NAME_PATTERN = re.compile(r"([A-Za-z0-9\-_]+\.)?[12][0-9]-[0-9]+-[0-9]+_[0-9]+")
  
   OPT_PATTERNS = { 
           "groups" : re.compile(r"^GROUP_COUNT: ([0-9]+)"),
