@@ -4,6 +4,7 @@ VERSION="2.01 2020-09-03"
 
 _os=`uname`
 _ws=`pwd | sed -e 's,.*/,,'`
+_jobs=`grep -c processor /proc/cpuinfo`
 
 # Defaults, building fastdebug
 _jdk_collection_root="/opt"
@@ -13,10 +14,12 @@ _pch="--disable-precompiled-headers"
 _werror="--disable-warnings-as-errors"
 
 
+
 # make build-microbenchmark will build build/$PROFILE/images/test/micro/benchmarks.jar
 # make test TEST="micro:java.lang.invoke"
 
 _jmh="no"
+
 
 # Try to guess correct boot jdk
 # it should be jdk11 jdk14 etc under _jdk_collection_root
@@ -70,7 +73,7 @@ configure_params=" \
 --disable-ccache \
 --enable-headless-only \
 --with-boot-jdk=${_boot_jdk} \
---with-jobs=4"
+--with-jobs=${_jobs}"
 
 echo "Boot JDK to bootstrap ${_boot_jdk}" 
 
