@@ -4,7 +4,7 @@ VERSION="2.01 2020-09-03"
 
 _os=`uname`
 _ws=`pwd | sed -e 's,.*/,,'`
-_jobs=`grep -c processor /proc/cpuinfo`
+_jobs=2
 
 # Defaults, building fastdebug
 _jdk_collection_root="/opt"
@@ -12,8 +12,6 @@ _flavor="fastdebug"
 _boot_jdk="/opt/jdk11"
 _pch="--disable-precompiled-headers"
 _werror="--disable-warnings-as-errors"
-
-
 
 # make build-microbenchmark will build build/$PROFILE/images/test/micro/benchmarks.jar
 # make test TEST="micro:java.lang.invoke"
@@ -51,6 +49,19 @@ then
     fi
   done
 fi      
+
+# Automatically increase number of jobs
+# if we have many cores but don't take them all
+if [ -f /proc/cpuinfo ]
+then
+ _jobs=`grep -c processor /proc/cpuinfo`
+ if [ ${_jobs} -gt 1 -a ${_jobs} -lt 8 ]
+ then
+   _jobs=`expr $_{_jobs} / 2`
+ else
+   _jobs=`expr $_{_jobs} - 4`
+ fi
+fi
 
 for parm in "$@"
 do
