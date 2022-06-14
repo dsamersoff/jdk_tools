@@ -12,6 +12,7 @@ _flavor="fastdebug"
 _boot_jdk="/opt/jdk11"
 _pch="--disable-precompiled-headers"
 _werror="--disable-warnings-as-errors"
+_headless="--enable-headless-only" 
 
 # make build-microbenchmark will build build/$PROFILE/images/test/micro/benchmarks.jar
 # make test TEST="micro:java.lang.invoke"
@@ -26,6 +27,16 @@ if [ "x$JDK_COLLECTION_ROOT" != "x" ]
 then
   _jdk_collection_root="$JDK_COLLECTION_ROOT"
 fi
+
+if [ -f ./make/conf/test-dependencies ]
+then
+  . ./make/conf/test-dependencies
+# We are building for jdk8 family,
+# do some adjustment
+  DEFAULT_ACCEPTABLE_BOOT_VERSIONS=${BOOT_JDK_VERSION}
+  _werror=""
+  _headless=""
+fi  
 
 if [ -f ./make/autoconf/version-numbers ]
 then
@@ -50,16 +61,17 @@ then
   done
 fi      
 
-# Automatically increase number of jobs
+# Automatically increase number of jobs 
 # if we have many cores but don't take them all
+# Account hyperthreading on desktop class machines
 if [ -f /proc/cpuinfo ]
 then
  _jobs=`grep -c processor /proc/cpuinfo`
- if [ ${_jobs} -gt 1 -a ${_jobs} -lt 8 ]
+ if [ ${_jobs} -gt 1 -a ${_jobs} -le 16 ]
  then
-   _jobs=`expr $_{_jobs} / 2`
+   _jobs=`expr ${_jobs} / 2`
  else
-   _jobs=`expr $_{_jobs} - 4`
+   _jobs=`expr ${_jobs} - 4`
  fi
 fi
 
@@ -81,8 +93,8 @@ done
 configure_params=" \
  ${_pch} \
  ${_werror} \
+ ${_headless} \
 --disable-ccache \
---enable-headless-only \
 --with-boot-jdk=${_boot_jdk} \
 --with-jobs=${_jobs}"
 
