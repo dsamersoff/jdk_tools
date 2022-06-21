@@ -63,17 +63,26 @@ fi
 
 if [ "x$JAVA_FAMILY" != "xjdk8" ]
 then
+   np_prefix=".."
+   np_kind="hotspot"
+
    if  echo $TESTJAVA | grep -q "images" 
    then
       echo "Warning! NATIVEPATH set to EXPLODED" 
-      export NATIVEPATH="${TESTJAVA}/../../support/test/hotspot/jtreg/native/lib"
-   else
-      export NATIVEPATH="${TESTJAVA}/../support/test/hotspot/jtreg/native/lib"
+      np_prefix="../.."
    fi
+
+   if pwd | grep -q "test/jdk" 
+   then
+      echo "Warning! NATIVEPATH set for JDK" 
+      np_kind="jdk"
+   fi
+
+   export NATIVEPATH="${TESTJAVA}/${np_prefix}/support/test/${np_kind}/jtreg/native/lib"
 
    if [ ! -d ${NATIVEPATH} ]
    then
-      echo "Native test lib not found. Run make test-bundles"
+      echo "Native path ${NATIVEPATH} is not a directory. Run make test-bundles"
       exit
    fi
 
