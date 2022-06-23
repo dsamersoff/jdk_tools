@@ -7,9 +7,12 @@ _ws=`pwd | sed -e 's,.*/,,'`
 _jobs=2
 
 # Defaults, building fastdebug
-_jdk_collection_root="/opt"
 _flavor="fastdebug"
 _boot_jdk="/opt/jdk11"
+
+_jdk_collection_root="/opt"
+_cross_root="/opt"
+
 _pch="--disable-precompiled-headers"
 _werror="--disable-warnings-as-errors"
 _headless="--enable-headless-only" 
@@ -18,6 +21,7 @@ _headless="--enable-headless-only"
 # make test TEST="micro:java.lang.invoke"
 
 _jmh="no"
+_target="default"
 
 
 # Try to guess correct boot jdk
@@ -81,6 +85,7 @@ do
             --product) _flavor="product"  ;;
             --fastdebug) _flavor="fastdebug" ;;
             --jvmci) _variant="jvmci" ;;
+            --target=*) _target=`echo $parm | sed -e s/.*=//` ;;
             --with-jmh=*) _jmh=`echo $parm | sed -e s/.*=//` ;;
             --with-boot-jdk=*) _boot_jdk=`echo $parm | sed -e s/.*=//` ;;
             --no-werror) _werror="--disable-warnings-as-errors"  ;;
@@ -99,6 +104,27 @@ configure_params=" \
 --with-jobs=${_jobs}"
 
 echo "Boot JDK to bootstrap ${_boot_jdk}" 
+
+# Try to include ${_cross_root}/${_target}/jdk_build_include.sh
+# That set additional parameters for cross compilation
+#
+# e.g.
+#
+# configure_params="${configure_params} --openjdk-target=riscv64-unknown-linux-gnu"
+# configure_params="${configure_params} --with-toolchain-path=/opt/riscv64/bin"
+# configure_params="${configure_params} --with-sysroot=/opt/riscv64/sysroot-jdk"
+
+if [ "${_target}" != "default" ]
+then
+  cross_options="${_cross_root}/${_target}/jdk_build_include.sh"
+  if [ ! -f "${cross_options}" ]
+  then
+    echo "Target ${_target} is requested, but no cross options ${cross_options} found"
+    exit 1
+  fi 
+  echo "Using ${cross_options} to set additional options"
+  . ${cross_options}
+fi
 
 # jmh e.g. "/opt/jmh/target"
 if [ "x$_jmh" != "xno" ]
