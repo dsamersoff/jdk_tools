@@ -151,4 +151,4 @@ then
 fi
 
 echo "======= Running: ./configure ${configure_params}"
-eval sh ./configure ${configure_params}
+eval bash ./configure ${configure_params}
