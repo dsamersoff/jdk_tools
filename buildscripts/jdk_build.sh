@@ -8,7 +8,7 @@ _jobs=2
 
 # Defaults, building fastdebug
 _flavor="fastdebug"
-_boot_jdk="/opt/jdk11"
+_boot_jdk="/opt/jdk"
 
 _jdk_collection_root="/opt"
 _cross_root="/opt"
@@ -52,6 +52,18 @@ then
   . ./make/conf/version-numbers.conf 
 fi  
 
+if [ "x${DEFAULT_ACCEPTABLE_BOOT_VERSIONS}" = "x" ]
+then
+  echo "Can't gess BOOT JDK from the ws, assume we are on jdk8"
+  if [ -f ./make/jprt.properties ]
+  then
+    DEFAULT_ACCEPTABLE_BOOT_VERSIONS=8
+
+    # We are building for jdk8 family, do some adjustment
+    _werror=""
+    _headless=""
+  fi
+fi
 
 if [ "x${DEFAULT_ACCEPTABLE_BOOT_VERSIONS}" != "x" ]
 then
@@ -65,9 +77,10 @@ then
   done
 fi      
 
-# Automatically increase number of jobs 
-# if we have many cores but don't take them all
+# Automatically increase number of jobs if we have many cores but don't take them all
 # Account hyperthreading on desktop class machines
+# Don't rely on configure logic here
+
 if [ -f /proc/cpuinfo ]
 then
  _jobs=`grep -c processor /proc/cpuinfo`
