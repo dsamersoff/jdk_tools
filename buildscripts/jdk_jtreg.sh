@@ -1,6 +1,7 @@
 #!/bin/sh
 
 PP=`pwd`
+jtreg_options=""
 
 if [ "x$1" = "xclean" ] 
 then
@@ -10,8 +11,14 @@ fi
 
 if [ "x$1" = "xrerun" ] 
 then
-     STATUS="-status:fail,error"
-     shift
+   jtreg_options="${jtreg_options} -status:fail,error"
+   shift
+fi
+
+if [ "x$1" = "xcontinue" ] 
+then
+   jtreg_options="${jtreg_options} -status:notRun"
+   shift
 fi
 
 if [ "x$1" != "x" ] 
@@ -30,7 +37,6 @@ fi
 echo "TESTJAVA: ${TESTJAVA}"
 export JT_JAVA=/opt/jdk/bin/java
 
-jtreg_options=""
 
 JAVA_FAMILY=`${TESTJAVA}/bin/java -version 2>&1 >/dev/null | sed -n -e 's/.*version "1\.8\..*/jdk8/p' -e 's/.*version "\(1[0-9]\)[\.-].*/jdk\1/p'`
 
@@ -60,43 +66,48 @@ fi
 # run:
 #    make test-bundles
 
-
+# JDK8 doesn't support native path
 if [ "x$JAVA_FAMILY" != "xjdk8" ]
 then
-   np_prefix=".."
-   np_kind="hotspot"
+  if [ "x$NATIVEPATH" = "x" ]
+  then
+    np_prefix=".."
+    np_kind="hotspot"
 
-   if  echo $TESTJAVA | grep -q "images" 
-   then
+    if  echo $TESTJAVA | grep -q "images" 
+    then
       echo "Warning! NATIVEPATH set to EXPLODED" 
       np_prefix="../.."
-   fi
+    fi
 
-   if pwd | grep -q "test/jdk" 
-   then
+    if pwd | grep -q "test/jdk" 
+    then
       echo "Warning! NATIVEPATH set for JDK" 
       np_kind="jdk"
-   fi
+    fi
 
-   export NATIVEPATH="${TESTJAVA}/${np_prefix}/support/test/${np_kind}/jtreg/native/lib"
+    NATIVEPATH="${TESTJAVA}/${np_prefix}/support/test/${np_kind}/jtreg/native/lib"
+  fi
 
-   if [ ! -d ${NATIVEPATH} ]
-   then
-      echo "Native path ${NATIVEPATH} is not a directory. Run make test-bundles"
-      exit
-   fi
+  if [ ! -d ${NATIVEPATH} ]
+  then
+    echo "Native path ${NATIVEPATH} is not a directory. Run make test-bundles"
+    exit 1
+  fi
 
-   jtreg_options="${jtreg_options} -nativepath:${NATIVEPATH}" 
+  jtreg_options="${jtreg_options} -nativepath:${NATIVEPATH}" 
 fi
+
+jtreg_options="${jtreg_options} -retain:fail,error"
 
 jtreg_options="${jtreg_options} \
    -J-Djavatest.maxOutputSize=9000000 \
    -verbose:all \
    -ignore:run \
    -vmoption:-Xmx2048m\
-   -reportDir:/tmp/jtreg-dms/JTreport \
-   -workDir:/tmp/jtreg-dms/JTwork \
-   -timeoutFactor:6 \
+   -reportDir:/root/jtreg-dms/JTreport \
+   -workDir:/root/jtreg-dms/JTwork \
+   -timeoutFactor:8 \
 "
  
 eval /opt/jtreg/bin/jtreg ${jtreg_options} -jdk "${TESTJAVA}" ${STATUS} ${PP} 
