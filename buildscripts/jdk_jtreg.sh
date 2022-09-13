@@ -34,34 +34,37 @@ then
   TESTJAVA=`testjava`
 fi  
 
-echo "TESTJAVA: ${TESTJAVA}"
-export JT_JAVA=/opt/jdk/bin/java
-
-
-JAVA_FAMILY=`${TESTJAVA}/bin/java -version 2>&1 >/dev/null | sed -n -e 's/.*version "1\.8\..*/jdk8/p' -e 's/.*version "\(1[0-9]\)[\.-].*/jdk\1/p'`
-
-if [ "x$JAVA_FAMILY" = "x" ]
+if [ "x${COMPJAVA}" = "x" ]
 then
-   echo "ERROR: Could not determine version of 'java' executable. Exiting."
-   exit 1
-else
-   echo "JAVA Family is $JAVA_FAMILY"
-fi
+  JAVA_FAMILY=`${TESTJAVA}/bin/java -version 2>&1 >/dev/null | sed -n -e 's/.*version "1\.8\..*/jdk8/p' -e 's/.*version "\([1-9][0-9]\)[\.-].*/jdk\1/p'`
 
-if [ "x$COMPJAVA" = "x" ]
-then
+  if [ "x$JAVA_FAMILY" = "x" ]
+  then
+     echo "ERROR: Could not determine version of 'java' executable. Exiting."
+     exit 1
+  fi
+
   COMPJAVA="/opt/${JAVA_FAMILY}"
 fi
 
-echo "COMPILE JAVA: ${COMPJAVA}"
-
 if [ ! -x $COMPJAVA/bin/javac ]
 then
-   echo "WARNING: Could not find java to compile tests"
-   echo "WARNING: Compiling using ${TESTJAVA}/bin/javac"
-else
-   jtreg_options="${jtreg_options} -compilejdk:${COMPJAVA}" 
+  echo "WARNING: Could not find java to compile tests, usint ${TESTJAVA}"
+  COMPJAVA="${TESTJAVA}"
 fi
+
+jtreg_options="${jtreg_options} -compilejdk:${COMPJAVA}" 
+
+[ "x$JTWORK" = "x" ] && JTWORK="/tmp/jtreg-dms"
+[ "x$JTREPORT" = "x" ] && JTREPORT=${JTWORK}
+
+jtreg_options="${jtreg_options} -reportDir:${JTREPORT}/JTreport -workDir:${JTWORK}/JTwork"
+
+echo "TESTJAVA: ${TESTJAVA}"
+echo "JAVA Family is $JAVA_FAMILY"
+echo "COMPILE JAVA: ${COMPJAVA}"
+echo "JTREG OUT: JTwork: ${JTWORK} JTreport: ${JTREPORT}"
+
 
 # run:
 #    make test-bundles
@@ -69,33 +72,37 @@ fi
 # JDK8 doesn't support native path
 if [ "x$JAVA_FAMILY" != "xjdk8" ]
 then
+  # JTREG requires JDK11 or later
+  export JT_JAVA=${COMPJAVA}
+
   if [ "x$NATIVEPATH" = "x" ]
   then
-    np_prefix=".."
     np_kind="hotspot"
-
-    if  echo $TESTJAVA | grep -q "images" 
-    then
-      echo "Warning! NATIVEPATH set to EXPLODED" 
-      np_prefix="../.."
-    fi
-
     if pwd | grep -q "test/jdk" 
     then
       echo "Warning! NATIVEPATH set for JDK" 
       np_kind="jdk"
     fi
 
-    NATIVEPATH="${TESTJAVA}/${np_prefix}/support/test/${np_kind}/jtreg/native/lib"
+    if  echo $TESTJAVA | grep -q "images" 
+    then
+      NATIVEPATH="${TESTJAVA}/../test/${np_kind}/jtreg/native"
+    else
+      echo "Warning! Native test will fail in exploded mode. Run make images test-bundles" 
+      NATIVEPATH="None"
+    fi
   fi
 
-  if [ ! -d ${NATIVEPATH} ]
+  if [ "x${NATIVEPATH}" != "xNone" ]
   then
-    echo "Native path ${NATIVEPATH} is not a directory. Run make test-bundles"
-    exit 1
+    if [ ! -d ${NATIVEPATH} ]
+    then
+      echo "Native path ${NATIVEPATH} is not a directory. Run make test-bundles"
+      exit 1
+    fi
+    jtreg_options="${jtreg_options} -nativepath:${NATIVEPATH}"
   fi
 
-  jtreg_options="${jtreg_options} -nativepath:${NATIVEPATH}" 
 fi
 
 jtreg_options="${jtreg_options} -retain:fail,error"
@@ -105,9 +112,7 @@ jtreg_options="${jtreg_options} \
    -verbose:all \
    -ignore:run \
    -vmoption:-Xmx2048m\
-   -reportDir:/root/jtreg-dms/JTreport \
-   -workDir:/root/jtreg-dms/JTwork \
-   -timeoutFactor:8 \
+   -timeoutFactor:8 
 "
  
 eval /opt/jtreg/bin/jtreg ${jtreg_options} -jdk "${TESTJAVA}" ${STATUS} ${PP} 
