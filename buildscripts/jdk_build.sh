@@ -124,6 +124,11 @@ configure_params=" \
 
 echo "Boot JDK to bootstrap ${_boot_jdk}" 
 
+if [ "x${JDK_CONFIGURE_ADD}" != "x" ]
+then
+  configure_params="${configure_params} ${JDK_CONFIGURE_ADD}"
+fi
+
 # Try to include ${_cross_root}/${_target}/jdk_build_include.sh
 # That set additional parameters for cross compilation
 #
