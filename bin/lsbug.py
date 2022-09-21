@@ -107,8 +107,12 @@ def process_directory(dirname):
   if m == None:
     return None
   id = m.group(1)  
-  takeaway_dir = os.path.join(dirname, id + "_takeaway")
-  os.makedirs(takeaway_dir, exist_ok = True)
+  takeaway_dir = id + "_takeaway"
+
+  if not os.path.exists(takeaway_dir):
+    takeaway_dir = os.path.join(dirname, id + "_takeaway")
+    os.makedirs(takeaway_dir, exist_ok = True)
+
   cmt_file = os.path.join(takeaway_dir, _comments_file)
 
   if (_retrive == Retrive.Always) or \
