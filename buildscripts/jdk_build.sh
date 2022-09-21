@@ -69,10 +69,16 @@ if [ "x${DEFAULT_ACCEPTABLE_BOOT_VERSIONS}" != "x" ]
 then
   for jdk_ver in $DEFAULT_ACCEPTABLE_BOOT_VERSIONS
   do
-    if [ -x $_jdk_collection_root/jdk${jdk_ver} ]
+    try_ver=`find "$_jdk_collection_root" -maxdepth 1 -type d -name "jdk-${jdk_ver}*" -o -name "jdk${jdk_ver}*" | head -1`
+    if [ ! -z "$try_ver" ]
     then
-      _boot_jdk="$_jdk_collection_root/jdk${jdk_ver}"
-      break
+      if [ -x "$try_ver/bin/java" ]
+      then
+         _boot_jdk="$try_ver"
+         break
+      else
+         echo "Discarded invalid jdk '$try_ver'"   
+      fi
     fi
   done
 fi      
