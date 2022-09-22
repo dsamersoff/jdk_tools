@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION="2.01 2020-09-03"
+VERSION="2.04 2022-09-22"
 
 _os=`uname`
 _ws=`pwd | sed -e 's,.*/,,'`
@@ -15,7 +15,8 @@ _cross_root="/opt"
 
 _pch="--disable-precompiled-headers"
 _werror="--disable-warnings-as-errors"
-_headless="--enable-headless-only" 
+# _headless="--enable-headless-only" 
+_headless="" 
 
 # make build-microbenchmark will build build/$PROFILE/images/test/micro/benchmarks.jar
 # make test TEST="micro:java.lang.invoke"
@@ -104,6 +105,7 @@ do
             --product) _flavor="product"  ;;
             --fastdebug) _flavor="fastdebug" ;;
             --jvmci) _variant="jvmci" ;;
+            --headless) _headless="--enable-headless-only" ;; 
             --target=*) _target=`echo $parm | sed -e s/.*=//` ;;
             --with-jmh=*) _jmh=`echo $parm | sed -e s/.*=//` ;;
             --with-boot-jdk=*) _boot_jdk=`echo $parm | sed -e s/.*=//` ;;
