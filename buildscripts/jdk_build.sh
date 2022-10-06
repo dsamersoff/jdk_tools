@@ -8,14 +8,18 @@ _jobs=2
 
 # Defaults, building fastdebug
 _flavor="fastdebug"
-_boot_jdk="/opt/jdk"
+_boot_jdk="default"
 
 _jdk_collection_root="/opt"
 _cross_root="/opt"
 
 _pch="--disable-precompiled-headers"
-_werror="--disable-warnings-as-errors"
-# _headless="--enable-headless-only" 
+
+_nowerror_cmd11="--disable-warnings-as-errors"
+_nowerror_cmd8="--with-extra-cxxflags='-Wno-error' --with-extra-cflags='-Wno-error'"
+_nowerror=""
+
+_headless_cmd11="--enable-headless-only" 
 _headless="" 
 
 # make build-microbenchmark will build build/$PROFILE/images/test/micro/benchmarks.jar
@@ -24,24 +28,27 @@ _headless=""
 _jmh="no"
 _target="default"
 
+for parm in "$@"
+do
+   case $parm in
+            --product) _flavor="product"  ;;
+            --fastdebug) _flavor="fastdebug" ;;
+            --jvmci) _variant="jvmci" ;;
+            --headless) _headless="${_headless_cmd11}" ;; 
+            --target=*) _target=`echo $parm | sed -e s/.*=//` ;;
+            --with-jmh=*) _jmh=`echo $parm | sed -e s/.*=//` ;;
+            --with-boot-jdk=*) _boot_jdk=`echo $parm | sed -e s/.*=//` ;;
+            --no-werror) _nowerror="yes"  ;;
+               *) echo "Undefined parameter $parm. Try --help for help"; exit  ;;
+   esac
+done
 
 # Try to guess correct boot jdk
 # it should be jdk11 jdk14 etc under _jdk_collection_root
-
 if [ "x$JDK_COLLECTION_ROOT" != "x" ]
 then
   _jdk_collection_root="$JDK_COLLECTION_ROOT"
 fi
-
-if [ -f ./make/conf/test-dependencies ]
-then
-  . ./make/conf/test-dependencies
-# We are building for jdk8 family,
-# do some adjustment
-  DEFAULT_ACCEPTABLE_BOOT_VERSIONS=${BOOT_JDK_VERSION}
-  _werror=""
-  _headless=""
-fi  
 
 if [ -f ./make/autoconf/version-numbers ]
 then
@@ -61,28 +68,38 @@ then
     DEFAULT_ACCEPTABLE_BOOT_VERSIONS=8
 
     # We are building for jdk8 family, do some adjustment
-    _werror=""
-    _headless=""
+    if [ "x${_nowerror}" = "xyes" ]
+    then
+      _nowerror=${_nowerror_cmd8}
+    fi
   fi
 fi
 
-if [ "x${DEFAULT_ACCEPTABLE_BOOT_VERSIONS}" != "x" ]
+if [ "x${_nowerror}" = "xyes" ]
 then
-  for jdk_ver in $DEFAULT_ACCEPTABLE_BOOT_VERSIONS
-  do
-    try_ver=`find "$_jdk_collection_root" -maxdepth 1 -type d -name "jdk-${jdk_ver}*" -o -name "jdk${jdk_ver}*" | head -1`
-    if [ ! -z "$try_ver" ]
-    then
-      if [ -x "$try_ver/bin/java" ]
+   _nowerror=${_nowerror_cmd11}
+fi
+
+if [ "x${_boot_jdk}" = "xdefault" ]
+then
+  if [ "x${DEFAULT_ACCEPTABLE_BOOT_VERSIONS}" != "x" ]
+  then
+    for jdk_ver in $DEFAULT_ACCEPTABLE_BOOT_VERSIONS
+    do
+      try_ver=`find "$_jdk_collection_root" -maxdepth 1 -type d -name "jdk-${jdk_ver}*" -o -name "jdk${jdk_ver}*" | head -1`
+      if [ ! -z "$try_ver" ]
       then
-         _boot_jdk="$try_ver"
-         break
-      else
-         echo "Discarded invalid jdk '$try_ver'"   
+        if [ -x "$try_ver/bin/java" ]
+        then
+           _boot_jdk="$try_ver"
+           break
+        else
+          echo "Discarded invalid jdk '$try_ver'"   
+        fi
       fi
-    fi
-  done
-fi      
+    done
+  fi      
+fi
 
 # Automatically increase number of jobs if we have many cores but don't take them all
 # Account hyperthreading on desktop class machines
@@ -99,26 +116,10 @@ then
  fi
 fi
 
-for parm in "$@"
-do
-   case $parm in
-            --product) _flavor="product"  ;;
-            --fastdebug) _flavor="fastdebug" ;;
-            --jvmci) _variant="jvmci" ;;
-            --headless) _headless="--enable-headless-only" ;; 
-            --target=*) _target=`echo $parm | sed -e s/.*=//` ;;
-            --with-jmh=*) _jmh=`echo $parm | sed -e s/.*=//` ;;
-            --with-boot-jdk=*) _boot_jdk=`echo $parm | sed -e s/.*=//` ;;
-            --no-werror) _werror="--disable-warnings-as-errors"  ;;
-            --werror) _werror="--enable-warnings-as-errors"  ;;
-               *) echo "Undefined parameter $parm. Try --help for help"; exit  ;;
-   esac
-done
-
 # Basic parameters
 configure_params=" \
  ${_pch} \
- ${_werror} \
+ ${_nowerror} \
  ${_headless} \
 --disable-ccache \
 --with-boot-jdk=${_boot_jdk} \
