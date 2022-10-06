@@ -3,10 +3,10 @@
 # vim: expandtab shiftwidth=2 softtabstop=2
 
 _BANNER="""
-  SSH config manager 
+  SSH config manager
   Version 1.01 2022-06-14
   Author: Dmitry Samersoff dms@samersoff.net
-"""   
+"""
 
 _HELP="""
 Usage: ssh_manager hostname
@@ -27,7 +27,8 @@ Example of config_D1H file, this file will be copied to .ssh_D1H/config:
 # AcceptKey akino
 # AcceptKey natsu
 # AcceptKey 4foo
-                                        
+# AcceptKey extern/dmitry
+
 Host github.com
   User git
   IdentityFile ~/.ssh/id_openjdk_rsa
@@ -65,12 +66,12 @@ def copy_identity_files(hostname):
     for ln in fd.readlines():
       idx = ln.find("IdentityFile")
       if idx != -1:
-        key_file = os.path.basename(ln[idx + len("IdentityFile") + 1:-1]) 
+        key_file = os.path.basename(ln[idx + len("IdentityFile") + 1:-1])
         print("Copy key %s ..." % key_file)
         try:
           shutil.copy(source(key_file), target(hostname, key_file))
           shutil.copy(source(key_file + ".pub"), target(hostname, key_file + ".pub"))
-        except FileNotFoundError as ex:  
+        except FileNotFoundError as ex:
           print (ex)
 
 def create_authorized_keys(hostname):
@@ -80,9 +81,15 @@ def create_authorized_keys(hostname):
       idx = ln.find("AcceptKey")
       if idx != -1:
         key_id = ln[idx + len("AcceptKey") + 1:-1]
-        key_files_list = glob(source("id_" + key_id + "*.pub")) 
+        key_id=key_id.rstrip()
+        d_idx =key_id.rfind("/")
+        dirpart = ""
+        if d_idx != -1:
+          dirpart = key_id[:d_idx+1]
+          key_id = key_id[d_idx+1:]
+        key_files_list = glob(source(dirpart + "id_" + key_id + "*.pub"))
         if len(key_files_list) == 0:
-          print ("Warning! Accept key %s not found" % key_id)
+          print ("Warning! Accept key %s%s not found" % (dirpart, key_id))
         else:
           authorized_key_files += key_files_list
 
@@ -94,7 +101,7 @@ def create_authorized_keys(hostname):
         print("Accept key %s ..." % kf)
         with open(kf, "r") as fdr:
           fdw.write(fdr.read())
-  return        
+  return
 
 def signal_handler(signal, frame): #pylint: disable=unused-argument
   sys.stdout.write("\nInterrupted. Exiting ...\n")
@@ -121,7 +128,7 @@ if __name__ == '__main__':
         print(_BANNER)
         if o in ("-h", "--help"):
           usage()
-        sys.exit(7)  
+        sys.exit(7)
       elif o in ("-s", "--storage"):
         """Path to ssh key storage"""
         _ssh_keys_storage = a
