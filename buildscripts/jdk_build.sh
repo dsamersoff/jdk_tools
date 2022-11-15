@@ -101,20 +101,7 @@ then
   fi      
 fi
 
-# Automatically increase number of jobs if we have many cores but don't take them all
-# Account hyperthreading on desktop class machines
-# Don't rely on configure logic here
-
-if [ -f /proc/cpuinfo ]
-then
- _jobs=`grep -c processor /proc/cpuinfo`
- if [ ${_jobs} -gt 1 -a ${_jobs} -le 16 ]
- then
-   _jobs=`expr ${_jobs} / 2`
- else
-   _jobs=`expr ${_jobs} - 4`
- fi
-fi
+echo "Boot JDK to bootstrap ${_boot_jdk}" 
 
 # Basic parameters
 configure_params=" \
@@ -122,10 +109,32 @@ configure_params=" \
  ${_nowerror} \
  ${_headless} \
 --disable-ccache \
---with-boot-jdk=${_boot_jdk} \
---with-jobs=${_jobs}"
+--with-boot-jdk=${_boot_jdk}"
 
-echo "Boot JDK to bootstrap ${_boot_jdk}" 
+# Automatically increase number of jobs if we have many cores but don't take them all
+# Account hyperthreading on desktop class machines
+# Don't rely on configure logic here
+
+_jobs=""
+if [ -f /proc/cpuinfo ]
+then
+ _jobs=`grep -c processor /proc/cpuinfo`
+else
+ _jobs=`sysctl -n hw.ncpu`
+fi
+
+if [ "x${_jobs}" != "x" ]
+then
+ if [ ${_jobs} -gt 1 -a ${_jobs} -le 16 ]
+ then
+   _jobs=`expr ${_jobs} / 2`
+ else
+   _jobs=`expr ${_jobs} - 4`
+ fi
+
+  configure_params="${configure_params} --with-jobs=${_jobs}"
+fi
+
 
 if [ "x${JDK_CONFIGURE_ADD}" != "x" ]
 then
