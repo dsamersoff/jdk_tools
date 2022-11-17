@@ -4,7 +4,6 @@ VERSION="2.04 2022-09-22"
 
 _os=`uname`
 _ws=`pwd | sed -e 's,.*/,,'`
-_jobs=2
 
 # Defaults, building fastdebug
 _flavor="fastdebug"
@@ -22,6 +21,10 @@ _nowerror=""
 _headless_cmd11="--enable-headless-only" 
 _headless="" 
 
+_variants=""
+_confname=""
+_features=""
+
 # make build-microbenchmark will build build/$PROFILE/images/test/micro/benchmarks.jar
 # make test TEST="micro:java.lang.invoke"
 
@@ -33,8 +36,10 @@ do
    case $parm in
             --product) _flavor="product"  ;;
             --fastdebug) _flavor="fastdebug" ;;
-            --jvmci) _variant="jvmci" ;;
+            --jvmci) _features="jvmci" ;;
             --headless) _headless="${_headless_cmd11}" ;; 
+            --multivm) _variants="server,client,minimal" ;; 
+            --with-conf-name=*) _confname=`echo $parm | sed -e s/.*=//` ;;
             --target=*) _target=`echo $parm | sed -e s/.*=//` ;;
             --with-jmh=*) _jmh=`echo $parm | sed -e s/.*=//` ;;
             --with-boot-jdk=*) _boot_jdk=`echo $parm | sed -e s/.*=//` ;;
@@ -111,9 +116,8 @@ configure_params=" \
 --disable-ccache \
 --with-boot-jdk=${_boot_jdk}"
 
-# Automatically increase number of jobs if we have many cores but don't take them all
-# Account hyperthreading on desktop class machines
-# Don't rely on configure logic here
+# Set number of jobs to value convenient for development
+# If that fails, fallback to configure logic that uses CPU aggressively
 
 _jobs=""
 if [ -f /proc/cpuinfo ]
@@ -135,10 +139,14 @@ then
   configure_params="${configure_params} --with-jobs=${_jobs}"
 fi
 
-
-if [ "x${JDK_CONFIGURE_ADD}" != "x" ]
+if [ "x${_variants}" != "x" ]
 then
-  configure_params="${configure_params} ${JDK_CONFIGURE_ADD}"
+  configure_params="${configure_params} --with-jvm-variants=minimal,client,server"
+fi
+
+if [ "x${_confname}" != "x" ]
+then
+  configure_params="${configure_params} --with-conf-name=${_flavor}_${_confname}"
 fi
 
 # Try to include ${_cross_root}/${_target}/jdk_build_include.sh
@@ -169,12 +177,10 @@ then
   configure_params="${configure_params} --with-jmh=${_jmh}"
 fi  
 
-# ============== VARIANTS ========================
-if [ "x${_variant}" = "xjvmci" ]
+if [ "x${_features}" = "xjvmci" ]
 then
   configure_params="${configure_params} --with-jvm-features=jvmci,compiler1,compiler2"
 fi
-# ================================================================================
 
 if [ "x${_flavor}" = "xfastdebug" ]
 then
@@ -184,6 +190,11 @@ fi
 if [ "x${_flavor}" = "xproduct" ]
 then
   configure_params="${configure_params} ${_werror}  --with-debug-level=release --with-native-debug-symbols=none"
+fi
+
+if [ "x${JDK_CONFIGURE_ADD}" != "x" ]
+then
+  configure_params="${configure_params} ${JDK_CONFIGURE_ADD}"
 fi
 
 echo "======= Running: ./configure ${configure_params}"
