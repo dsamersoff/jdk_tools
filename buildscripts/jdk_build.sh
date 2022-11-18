@@ -39,6 +39,7 @@ do
             --jvmci) _features="jvmci" ;;
             --headless) _headless="${_headless_cmd11}" ;; 
             --multivm) _variants="server,client,minimal" ;; 
+            --short-conf-name) _confname="short" ;;
             --with-conf-name=*) _confname=`echo $parm | sed -e s/.*=//` ;;
             --target=*) _target=`echo $parm | sed -e s/.*=//` ;;
             --with-jmh=*) _jmh=`echo $parm | sed -e s/.*=//` ;;
@@ -47,6 +48,8 @@ do
                *) echo "Undefined parameter $parm. Try --help for help"; exit  ;;
    esac
 done
+
+[ "x${_confname}" = "xshort" ] && _confname="${_flavor}"
 
 # Try to guess correct boot jdk
 # it should be jdk11 jdk14 etc under _jdk_collection_root
@@ -146,7 +149,7 @@ fi
 
 if [ "x${_confname}" != "x" ]
 then
-  configure_params="${configure_params} --with-conf-name=${_flavor}_${_confname}"
+  configure_params="${configure_params} --with-conf-name=${_confname}"
 fi
 
 # Try to include ${_cross_root}/${_target}/jdk_build_include.sh
