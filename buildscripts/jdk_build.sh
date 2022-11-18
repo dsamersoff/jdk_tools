@@ -9,7 +9,7 @@ _ws=`pwd | sed -e 's,.*/,,'`
 _flavor="fastdebug"
 _boot_jdk="default"
 
-_jdk_collection_root="/opt"
+_jdk_collection_root="/opt:/ws:/ws/bellsoft"
 _cross_root="/opt"
 
 _pch="--disable-precompiled-headers"
@@ -94,7 +94,8 @@ then
   then
     for jdk_ver in $DEFAULT_ACCEPTABLE_BOOT_VERSIONS
     do
-      try_ver=`find "$_jdk_collection_root" -maxdepth 1 -type d -name "jdk-${jdk_ver}*" -o -name "jdk${jdk_ver}*" | head -1`
+      coll_root=`echo $_jdk_collection_root | sed -e "s/:/ /g"`
+      try_ver=`find $coll_root -maxdepth 1 -type d -name "jdk-${jdk_ver}*" -o -name "jdk${jdk_ver}*" | head -1` 2>/dev/null
       if [ ! -z "$try_ver" ]
       then
         if [ -x "$try_ver/bin/java" ]
@@ -108,8 +109,6 @@ then
     done
   fi      
 fi
-
-echo "Boot JDK to bootstrap ${_boot_jdk}" 
 
 # Basic parameters
 configure_params=" \
