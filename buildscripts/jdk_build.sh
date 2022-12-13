@@ -10,7 +10,7 @@ _flavor="fastdebug"
 _boot_jdk="default"
 
 _jdk_collection_root="/opt:/ws:/ws/bellsoft"
-_cross_root="/opt"
+_cross_root="/opt/crossroot"
 
 _pch="--disable-precompiled-headers"
 
