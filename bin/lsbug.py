@@ -3,10 +3,10 @@
 # vim: expandtab shiftwidth=2 softtabstop=2
 
 _BANNER="""
-  Python Utility Template 
+  Python Utility Template
   Version 1.000 2020-09-25
   Author: Dmitry Samersoff dms@samersoff.net
-"""   
+"""
 
 _HELP="""
   Usage:
@@ -24,6 +24,8 @@ import configparser
 import re
 import requests
 
+import xml.etree.ElementTree as ET
+
 class Retrive(Enum):
   Never = 0
   OnDemand = 1
@@ -40,6 +42,9 @@ _ini_name = ".lsbug.ini"
 _api_url = None
 _api_email = None
 _api_token = None
+
+# https://bugs.openjdk.org/si/jira.issueviews:issue-xml/JDK-8293806/JDK-8293806.xml
+_jdk_xml_url = "https://bugs.openjdk.org/si/jira.issueviews:issue-xml/%s/%s.xml?field=title"
 
 _dirname_re = re.compile(r"([A-Z]+-[0-9]+).*")
 _comments_file = "comments"
@@ -60,7 +65,7 @@ class Print:
   @staticmethod
   def cl(verbosity, color, text):
     if verbosity <= _verbosity:
-      print("\033[%dm" % color.value, text, "\033[0m") 
+      print("\033[%dm" % color.value, text, "\033[0m")
 
   def error(text):
     Print.cl(0, Color.Red, text)
@@ -74,52 +79,75 @@ class Print:
 def get_from_file(filename):
   """ Retrive Issue data from file. Single line ID: summary is expected"""
   with open(filename, "r") as fd:
-    ln = fd.readline()
-    idx = ln.index(":")  
-  return Issue(ln[:idx], ln[idx+1:-1])
+    ln = fd.readline().rstrip()
+    idx = ln.index(":")
+  return Issue(ln[:idx].strip(), ln[idx+1:].strip())
 
-def get_from_JIRA(id):
-  """ Retrive Issue data from JIRA using REST """
+def get_from_JIRA_rest(id):
+  """ Retrive Issue data from JIRA using REST"""
   Print.debug("Retriving %s ..." % id)
   url = "%s/issue/%s?fields=status,summary" % (_api_url, id)
   response = requests.get(url, auth=(_api_email, _api_token),
-                          headers={'X-Atlassian-Token':'no-check', 
+                          headers={'X-Atlassian-Token':'no-check',
                                    'Content-Type':'application/json; charset=utf-8'})
   if response.status_code != 200:
     Print.error("Error: %d %s" % (response.status_code, response.text))
     return None
-  
+
   data = response.json()
   # print(response.json())
   # for k,v in data.items():
   #   print( k + "=" + repr(v))
   summary = data["fields"]["summary"]
   Print.debug(" ... got %s: %s" % (id, summary))
-  return Issue(id, summary) 
+  return Issue(id, summary)
+
+def get_from_JIRA_xml(id):
+  """ Retrive Issue data from JIRA using XML rss"""
+  Print.debug("Retriving %s ..." % id)
+  url = _jdk_xml_url % (id, id)
+  response = requests.get(url,
+                          headers={'X-Atlassian-Token':'no-check',
+                                   'Content-Type':'text/xml; charset=utf-8'})
+  if response.status_code != 200:
+    Print.error("Error: %d %s" % (response.status_code, response.text))
+    return None
+
+  root = ET.fromstring(response.text)
+  summary = ""
+  channel = root.find("channel")
+  for elem in channel.find("item"):
+    if elem.tag == "title":
+      summary = elem.text
+  summary = summary[summary.find("]") + 1 : ].strip()
+  Print.debug(" ... got %s: %s" % (id, summary))
+  return Issue(id, summary)
 
 def process_directory(dirname):
-  """ Get directory with name TAG-NNN[-_.]text, 
-      and proceed with creating required infra: 
+  """ Get directory with name TAG-NNN[-_.]text,
+      and proceed with creating required infra:
       comments file and ID_takeaway folder
   """
   issue = None
-  m = _dirname_re.match(dirname) 
+  m = _dirname_re.match(dirname)
   if m == None:
     return None
-  id = m.group(1)  
-  takeaway_dir = id + "_takeaway"
-
-  if not os.path.exists(takeaway_dir):
-    takeaway_dir = os.path.join(dirname, id + "_takeaway")
-    os.makedirs(takeaway_dir, exist_ok = True)
-
+  id = m.group(1)
+  takeaway_dir = os.path.join(dirname, id + "_takeaway")
+  os.makedirs(takeaway_dir, exist_ok = True)
   cmt_file = os.path.join(takeaway_dir, _comments_file)
 
   if (_retrive == Retrive.Always) or \
-     (_retrive == Retrive.OnDemand and not os.path.isfile(cmt_file)):
-    issue = get_from_JIRA(id)
+    (_retrive == Retrive.OnDemand and not os.path.isfile(cmt_file)):
+    if id.startswith("LIB-"):
+      issue = get_from_JIRA_rest(id)
+    elif id.startswith("JDK-"):
+      issue = get_from_JIRA_xml(id)
+    else:
+      issue = Issue(id, "Unknown source")
+
     with open(cmt_file, "w") as fd:
-      fd.write(str(issue))
+      fd.write(str(issue) + "\n")
 
   issue = get_from_file(cmt_file)
   return issue
@@ -132,9 +160,9 @@ def load_credentials():
   cfg = configparser.ConfigParser()
   cfg.read(inifile)
 
-  _api_url = cfg.get("DEFAULT", "url") 
-  _api_email = cfg.get("DEFAULT", "user") 
-  _api_token = cfg.get("DEFAULT", "token") 
+  _api_url = cfg.get("DEFAULT", "url")
+  _api_email = cfg.get("DEFAULT", "user")
+  _api_token = cfg.get("DEFAULT", "token")
 
 def signal_handler(signal, frame): #pylint: disable=unused-argument
   sys.stdout.write("\nInterrupted. Exiting ...\n")
@@ -160,7 +188,7 @@ if __name__ == '__main__':
         print(_BANNER)
         if o in ("-h", "--help"):
           usage()
-        sys.exit(7)  
+        sys.exit(7)
       elif o in ("-r", "--retrive"):
         """Always access JIRA"""
         _retrive = Retrive.Always
@@ -173,9 +201,7 @@ if __name__ == '__main__':
 
   try:
     load_credentials()
-    if _api_url == None or _api_token == None or _api_email == None:
-      Print.error("JIRA REST api credentials doesn't set. Retrive is disabled")
-  except Exception as ex:  
+  except Exception as ex:
     tb_lines = traceback.format_exc().splitlines()
     Print.debug(ex)
     Print.debug("\n".join(tb_lines[1:4]))
@@ -183,6 +209,14 @@ if __name__ == '__main__':
   if _api_url == None or _api_token == None or _api_email == None:
     Print.error("JIRA REST api credentials doesn't set. Retrive is disabled")
     _retrive = Retrive.Never
+
+  if len(args) > 0:
+    """Process single directory if it match the pattern"""
+    if os.path.isdir(args[0]):
+      issue = process_directory(args[0])
+      if issue != None:
+        Print.info(str(issue))
+        exit(0)
 
   root = "." if len(args) == 0 else args[0]
   for dn in os.listdir(root):
