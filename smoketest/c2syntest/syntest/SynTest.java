@@ -13,11 +13,11 @@ import java.io.PrintWriter;
 public class SynTest implements Opcodes {
   private final static String packageName = "syntest";
   private final static String classNamePrefix = "SynImpl";
-  private final static int numClasses = 80_000;
+  private final static int numClasses = 40_000;
   private final static SynTestRunner dtrs[] = new SynTestRunner[numClasses];
   private final static int warmUps = 10_000;
-  private final static int numBatches = 1_000_000;
-  private final static long timesPerBatch = 1_000_000;
+  private final static int numBatches = 10_000;
+  private final static long timesPerBatch = 1000;
   private final static long batchTime[] = new long[numBatches];
   private final static boolean traceMethodGeneration = false;
 
@@ -146,6 +146,26 @@ public class SynTest implements Opcodes {
     return end - start;
   }
 
+  public static void print_stat(int numItems) {
+      double total = 0;
+      for (int i = 0; i < numItems; ++i) {
+        total += batchTime[i];
+      }
+
+      double mean = total / numItems;
+
+      double variance = 0;
+      for (int i = 0; i < numItems; i++) {
+        variance += Math.pow(batchTime[i] - mean, 2);
+      }
+      variance = variance / numItems;
+
+      double std = Math.sqrt(variance);
+
+      System.out.printf("Executed %d classes, %d times in %d batches\n", numClasses, (long)(numItems * timesPerBatch), numItems);
+      System.out.printf("Results %f (%f +- %f)\n", total, mean, std);
+  }
+
   public static void main(String args[]) {
     System.out.println("Syntetic test started");
     try {
@@ -171,26 +191,12 @@ public class SynTest implements Opcodes {
       System.out.println("Executing");
       for (int i = 0; i < numBatches; ++i) {
         batchTime[i] = do_measure(timesPerBatch);
+        print_stat(i+1);
       }
+
       System.out.println("Exec result:" + runResult);
 
-      double total = 0;
-      for (int i = 0; i < numBatches; ++i) {
-        total += batchTime[i];
-      }
-
-      double mean = total / numBatches;
-
-      double variance = 0;
-      for (int i = 0; i < numBatches; i++) {
-        variance += Math.pow(batchTime[i] - mean, 2);
-      }
-      variance = variance / numBatches;
-
-      double std = Math.sqrt(variance);
-
-      System.out.printf("Executed %d classes, %d times in %d batches\n", numClasses, (long)(numBatches * timesPerBatch), numBatches);
-      System.out.printf("Results %f (%f +- %f)\n", total, mean, std);
+      print_stat(numBatches);
     } catch(Throwable ex) {
        ex.printStackTrace();
     }
