@@ -33,8 +33,8 @@ ${_rsync} -v -rl --update --delete --delete-during --safe-links --exclude "man" 
 
 [ "${_sync_sources}" = "no" -a "${_sync_tests}" = "no" ] && exit 0
 
-src=`echo ${_test_java} | sed -e 's/build.*//'`
-[ ! -d "${src}/src/hotspot" ] && echo "_test_java must be inside jdk sources" && exit 1
+_src=`echo ${_test_java} | sed -e 's/build.*//'`
+[ ! -d "${_src}/src/hotspot" ] && echo "_test_java must be inside jdk sources" && exit 1
 
 
 if [ "${_sync_sources}" = "yes" ] 
@@ -46,6 +46,6 @@ if [ "${_sync_tests}" = "yes" ]
 then
   [ ! -d "${_test_java}/../../support/test/hotspot/jtreg/native" ] && echo "No native test bundles" && exit 1
 
-  ${_rsync} -v -rl --update --delete --delete-during --safe-links --exclude "build" --exclude ".git" ${_test_java}/test ${_test_host}:/export/ojdk
+  ${_rsync} -v -rl --update --delete --delete-during --safe-links --exclude "build" --exclude ".git" ${_src}/test ${_test_host}:/export/ojdk
   ${_rsync} -v -rl --update --delete --delete-during --safe-links --exclude "build" --exclude ".git" ${_test_java}/../../support/test/hotspot/jtreg/native ${_test_host}:/export/ojdk
 fi
