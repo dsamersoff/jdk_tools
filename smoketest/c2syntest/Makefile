@@ -7,9 +7,8 @@ JAVACOPTS=-sourcepath .
 CLASSES=SynTest.class
 
 # LOGGING=-Xlog:gc,gc+heap=debug,gc+age=trace:gc.log::filecount=0
-C2_OPTIONS=-XX:-SegmentedCodeCache \
-      	   -XX:+PrintCompilation \
-	       -XX:-TieredCompilation \
+C2_OPTIONS=-XX:+SegmentedCodeCache \
+	       -XX:+TieredCompilation \
 	       -XX:Tier4InvocationThreshold=1000 \
            -XX:CompileCommandFile=compiler_tips.rc
 
