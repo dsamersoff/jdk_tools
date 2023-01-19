@@ -155,13 +155,14 @@ public class SynTest implements Opcodes {
       double used = u.getUsed();
       // Skip Java Heap
       if (m.getType() == MemoryType.NON_HEAP) {
-         System.err.println(m.getName() + " " + used);
+        System.out.printf("%s %dKb\n", m.getName(), Math.round(used/1024));
       }
     }
-    System.err.println("---------------------------------");
+    System.out.println("");
   }
 
   public static void printCompiledMethods() {
+    System.out.println("---------- Compiled Methods ----------");
     try {
       ObjectName objectName = new ObjectName("com.sun.management:type=DiagnosticCommand");
       MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
@@ -177,13 +178,15 @@ public class SynTest implements Opcodes {
       ).collect(Collectors.toList());
 
       long all_count = filtered.size();
-
-      long c2_count = filtered.stream().filter(
-        (line) -> {
+      if (all_count > 0) {
+        long counts[] = new long[5];
+        for (String line : filtered) {
           String fields[] = line.split(" ");
-          return Integer.valueOf(fields[1]) == 4;
+          counts[Integer.valueOf(fields[1])] += 1;
         }
-      ).count();
+        System.out.printf("Compiled at levels 1: %d 2: %d 3: %d 4: %d\n", counts[1], counts[2], counts[3], counts[4]);
+      }
+      System.out.printf("Found compiled syntetic methods: %d\n", all_count);
 
       /*
       result.lines().filter(
@@ -191,10 +194,10 @@ public class SynTest implements Opcodes {
       ).forEach(System.out::println);
       */
 
-      System.out.printf("Found compiled syntetic methods, all: %d c2: %d\n", all_count, c2_count);
     } catch(Throwable ex) {
        ex.printStackTrace();
     }
+    System.out.println("");
   }
 
   public static void printStat(int numItems) {
@@ -266,8 +269,8 @@ public class SynTest implements Opcodes {
       }
       System.out.println("Warmup result:" + runResult);
 
-      printCompiledMethods();
       printMemoryUsage();
+      printCompiledMethods();
 
       System.out.println("Executing");
       for (int i = 0; i < numBatches; ++i) {
@@ -277,8 +280,8 @@ public class SynTest implements Opcodes {
 
       System.out.println("Execution result:" + runResult);
 
-      printCompiledMethods();
       printMemoryUsage();
+      printCompiledMethods();
 
       printFinalStat(numBatches);
 
