@@ -1,3 +1,7 @@
+This repo contains set of utilities to support JVM perfromance work
+===================================================================
+
+
 Specjbb supporting scripts
 ========================
 This is the set of scripts to support specjbb performance tuning
