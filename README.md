@@ -1,4 +1,4 @@
-This repo contains set of utilities to support JVM perfromance work
+This repo contains set of utilities to support JVM performance work
 ===================================================================
 
 
