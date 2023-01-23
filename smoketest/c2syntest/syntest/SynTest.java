@@ -4,6 +4,8 @@
  */
 package syntest;
 
+import org.apache.commons.cli.*;
+
 import org.objectweb.asm.*;
 import org.objectweb.asm.util.*;
 
@@ -24,14 +26,15 @@ import javax.management.MBeanServer;
 public class SynTest implements Opcodes {
   private final static String packageName = "syntest";
   private final static String classNamePrefix = "SynImpl";
-  private final static int numClasses = 20_000;
-  private final static SynTestRunner dtrs[] = new SynTestRunner[numClasses];
-  private final static int warmUps = 10_000;
-  private final static int numBatches = 1_000;
-  private final static long timesPerBatch = 1_000;
-  private final static long batchTime[] = new long[numBatches];
   private final static boolean traceMethodGeneration = false;
 
+  private static int numClasses = 20_000;
+  private static int warmUps = 10_000;
+  private static int numBatches = 1_000;
+  private static long itersPerBatch = 1_000;
+
+  private static long batchTime[];
+  private static SynTestRunner dtrs[];
   private static long runResult = 0;
 
   private static List<MemoryPoolMXBean> memoryBeans;
@@ -235,15 +238,56 @@ public class SynTest implements Opcodes {
 
     double std = Math.sqrt(variance);
 
-    System.out.printf("Executed %d classes, %d times in %d batches\n", numClasses, (long)(numItems * timesPerBatch), numItems);
+    System.out.printf("Executed %d classes, %d times in %d batches\n", numClasses, (long)(numItems * itersPerBatch), numItems);
     if (last_call) {
       System.out.print("Final ");
     }
     System.out.printf("Results %d (%f +- %f)\n", total, mean, std);
-}
+  }
 
   public static void main(String args[]) {
-    System.out.println("Syntetic test started");
+    System.out.println("Syntetic test starting ...");
+
+    Options options = new Options();
+    CommandLineParser parser = new DefaultParser();
+    options.addOption("b", "batches", true, "Number of batches to run (default 1_000)");
+    options.addOption("c", "classes", true, "Number of classes to run (default 20_000)");
+    options.addOption("i", "iterations", true, "Number of iterations within a batch (default 1_000)");
+    options.addOption("w", "warmups", true, "Number of warm-up iterations (default 10_000)");
+    options.addOption("help", false, "Print this message");
+
+    try {
+      CommandLine cmd = parser.parse(options, args);
+
+      if(cmd.hasOption("help")) {
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp("syntest", options);
+        System.exit(7);
+      }
+
+      if(cmd.hasOption("classes")) {
+        numClasses = Integer.valueOf(cmd.getOptionValue("classes"));
+      }
+      if(cmd.hasOption("batches")) {
+        numBatches = Integer.valueOf(cmd.getOptionValue("batches"));
+      }
+      if(cmd.hasOption("iterations")) {
+        itersPerBatch = Integer.valueOf(cmd.getOptionValue("iterations"));
+      }
+      if(cmd.hasOption("warmups")) {
+        warmUps = Integer.valueOf(cmd.getOptionValue("warmups"));
+      }
+
+      dtrs = new SynTestRunner[numClasses];
+      batchTime = new long[numBatches];
+
+      System.out.printf("With flags: %d classes, %d warm-up runs, %d batches, %d iterations per batch\n",
+                          numClasses, warmUps, numBatches, itersPerBatch);
+    } catch(Throwable ex) {
+      System.err.println("Command line error");
+      ex.printStackTrace();
+      System.exit(7);
+    }
 
     try {
       memoryBeans = ManagementFactory.getMemoryPoolMXBeans();
@@ -274,7 +318,7 @@ public class SynTest implements Opcodes {
 
       System.out.println("Executing");
       for (int i = 0; i < numBatches; ++i) {
-        batchTime[i] = do_measure(timesPerBatch);
+        batchTime[i] = do_measure(itersPerBatch);
         printStat(i+1);
       }
 

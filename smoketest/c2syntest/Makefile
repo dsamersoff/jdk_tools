@@ -1,7 +1,7 @@
 JAVAC=$(TESTJAVA)/bin/javac
 JAVA=$(TESTJAVA)/bin/java
 
-CLASSPATH=asm-9.4.jar:asm-util-9.4.jar:.
+CLASSPATH=asm-9.4.jar:asm-util-9.4.jar:commons-cli-1.5.0.jar:.
 JAVACOPTS=-sourcepath .
 
 CLASSES=SynTest.class
@@ -12,7 +12,7 @@ C2_OPTIONS=-XX:+SegmentedCodeCache \
 	       -XX:Tier4InvocationThreshold=1000 \
            -XX:CompileCommandFile=compiler_tips.rc
 
-all: asm-9.4.jar asm-util-9.4.jar syntest/SynTest.class
+all: asm-9.4.jar asm-util-9.4.jar commons-cli-1.5.0.jar syntest/SynTest.class
 
 clean:
 	rm -f syntest/SynTest*.class gc.log
@@ -23,9 +23,11 @@ asm-9.4.jar:
 asm-util-9.4.jar:
 	wget https://repo1.maven.org/maven2/org/ow2/asm/asm-util/9.4/asm-util-9.4.jar
 
+commons-cli-1.5.0.jar:
+	wget https://repo1.maven.org/maven2/commons-cli/commons-cli/1.5.0/commons-cli-1.5.0.jar
 
 run:
-	$(JAVA) -cp $(CLASSPATH) -ms2G -mx2G $(LOGGING) $(C2_OPTIONS) syntest.SynTest
+	$(JAVA) -cp $(CLASSPATH) -ms2G -mx2G $(LOGGING) $(C2_OPTIONS) syntest.SynTest -b 300
 
 syntest/SynTest.class: syntest/SynTest.java
 	$(JAVAC) -cp $(CLASSPATH) $(JAVACOPTS) $<
