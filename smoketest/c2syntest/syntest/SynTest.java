@@ -152,7 +152,7 @@ public class SynTest implements Opcodes {
   }
 
   public static void printMemoryUsage() {
-    System.err.println("---------- Memory Usage ----------");
+    System.out.println("---------- Memory Usage ----------");
     for (MemoryPoolMXBean m: memoryBeans) {
       MemoryUsage u = m.getUsage();
       double used = u.getUsed();
@@ -330,6 +330,7 @@ public class SynTest implements Opcodes {
       printFinalStat(numBatches);
 
     } catch(Throwable ex) {
+       System.err.println("Test error");
        ex.printStackTrace();
     }
   }
