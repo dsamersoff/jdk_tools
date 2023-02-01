@@ -133,7 +133,10 @@ def process_directory(dirname):
   if m == None:
     return None
   id = m.group(1)
-  takeaway_dir = os.path.join(dirname, id + "_takeaway")
+  takeaway_dir = id + "_takeaway"
+  if os.path.isdir(dirname):
+    takeaway_dir = os.path.join(dirname, takeaway_dir)
+
   os.makedirs(takeaway_dir, exist_ok = True)
   cmt_file = os.path.join(takeaway_dir, _comments_file)
 
@@ -210,17 +213,22 @@ if __name__ == '__main__':
     Print.error("JIRA REST api credentials doesn't set. Retrive is disabled")
     _retrive = Retrive.Never
 
+  the_dir = "."
   if len(args) > 0:
     """Process single directory if it match the pattern"""
-    if os.path.isdir(args[0]):
-      issue = process_directory(args[0])
-      if issue != None:
-        Print.info(str(issue))
-        exit(0)
+    the_dir = args[0]
+    if the_dir == ".":
+      the_dir = os.path.basename(os.getcwd())
+      issue = process_directory(the_dir)
+    elif os.path.isdir(the_dir):
+      issue = process_directory(the_dir)
 
-  root = "." if len(args) == 0 else args[0]
-  for dn in os.listdir(root):
-    if os.path.isdir(dn) :
+    if issue != None:
+      Print.info(str(issue))
+      exit(0)
+
+  for dn in os.listdir(the_dir):
+    if os.path.isdir(dn):
       try:
         issue = process_directory(dn)
         if issue != None:
