@@ -49,7 +49,7 @@ public class SynTest implements Opcodes {
     String interfaces[] = { packageName + "/SynTestRunner" };
 
     ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-    cw.visit(V17, ACC_PUBLIC, packageName + "/" + className, null, "java/lang/Object", interfaces);
+    cw.visit(V11, ACC_PUBLIC, packageName + "/" + className, null, "java/lang/Object", interfaces);
 
     MethodVisitor ctr = cw.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
     ctr.visitCode();
