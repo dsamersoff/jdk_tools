@@ -1,3 +1,20 @@
-dontinline syntest/*.* 
-# compileonly syntest/*.doit
-
+[
+ { 
+    match: [ "syntest/*.doit" ],
+    c1 : {
+       Enable: false
+    },
+    c2: {
+       PrintCompilation: false
+    }
+ },
+ {
+    match: [ "*.*" ],
+    c1 : {
+      Enable: false
+    },
+    c2: {
+      inline: [ "-syntest/*.*" ] 
+    }
+ }
+]

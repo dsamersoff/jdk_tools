@@ -32,6 +32,7 @@ public class SynTest implements Opcodes {
   private static int warmUps = 10_000;
   private static int numBatches = 1_000;
   private static long itersPerBatch = 1_000;
+  private static String compilerDirectivesFile = null;
 
   private static long batchTime[];
   private static SynTestRunner dtrs[];
@@ -166,41 +167,72 @@ public class SynTest implements Opcodes {
 
   public static void printCompiledMethods() {
     System.out.println("---------- Compiled Methods ----------");
+    String result = do_run_dcmd("compilerCodelist", new String[]{""});
+    List<String> filtered = result.lines().filter(
+      (line) -> line.contains(packageName + ".SynImpl_")
+    ).collect(Collectors.toList());
+
+    long all_count = filtered.size();
+    if (all_count > 0) {
+      long counts[] = new long[5];
+      long state_counts[] = new long[5];
+      long in_use_counts[] = new long[5];
+      for (String line : filtered) {
+        String fields[] = line.split(" ");
+        int state = Integer.valueOf(fields[2]); // account nmethod state see: compiledMethod.hpp
+        int comp_level = Integer.valueOf(fields[1]);
+
+        counts[comp_level] += 1;
+        if (state != -1) { // skip initializing
+          state_counts[state] += 1;
+          if (state == 0 /*in_use*/) {
+            in_use_counts[comp_level] += 1;
+          }
+        }
+      }
+      System.out.printf("Compiled at levels 1: %d 2: %d 3: %d 4: %d\n",
+              counts[1], counts[2], counts[3], counts[4]);
+      System.out.printf("In use at levels 1: %d 2: %d 3: %d 4: %d\n",
+              in_use_counts[1], in_use_counts[2], in_use_counts[3], in_use_counts[4]);
+      System.out.printf("CodeCache states in_use: %d not_used: %d not_reentrant: %d zombie: %d unloaded: %d\n",
+              state_counts[0], state_counts[1], state_counts[2], state_counts[3], state_counts[4]);
+
+      System.out.printf("Syntetic methods in Codecache (all states): %d\n", all_count);
+    }
+    else {
+      System.out.println("No syntetic methods in Codecache (all states)");
+    }
+
+    /*
+    result.lines().filter(
+      (line) -> line.contains(packageName + ".SynImpl_")
+    ).forEach(System.out::println);
+    */
+    System.out.println("");
+  }
+
+  public static void reloadCompilerDirectives(String filename) {
+    System.out.println("---------- Reloading Compiler Directives ----------");
+    String result = do_run_dcmd("compilerDirectivesClear", new String[]{""});
+    System.out.println("Clear: " + result);
+    result = do_run_dcmd("compilerDirectivesAdd", new String[]{ filename });
+    System.out.println("Add: " + result);
+  }
+
+  private static String do_run_dcmd(String operationName, String operationArgs[]) {
+    String result = null;
     try {
       ObjectName objectName = new ObjectName("com.sun.management:type=DiagnosticCommand");
       MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
-
-      String operationName = "compilerCodelist"; //vmFlags
-      Object[] params = new Object[1];
+      Object[] params = new Object[] { operationArgs };
       String[] signature = new String[]{String[].class.getName()};
 
-      String result = (String) mbeanServer.invoke(objectName, operationName, params, signature);
-
-      List<String> filtered = result.lines().filter(
-        (line) -> line.contains(packageName + ".SynImpl_")
-      ).collect(Collectors.toList());
-
-      long all_count = filtered.size();
-      if (all_count > 0) {
-        long counts[] = new long[5];
-        for (String line : filtered) {
-          String fields[] = line.split(" ");
-          counts[Integer.valueOf(fields[1])] += 1;
-        }
-        System.out.printf("Compiled at levels 1: %d 2: %d 3: %d 4: %d\n", counts[1], counts[2], counts[3], counts[4]);
-      }
-      System.out.printf("Found compiled syntetic methods: %d\n", all_count);
-
-      /*
-      result.lines().filter(
-        (line) -> line.contains(packageName + ".SynImpl_")
-      ).forEach(System.out::println);
-      */
-
+      result = (String) mbeanServer.invoke(objectName, operationName, params, signature);
     } catch(Throwable ex) {
-       ex.printStackTrace();
+      ex.printStackTrace();
+      System.exit(1);
     }
-    System.out.println("");
+    return result;
   }
 
   public static void printStat(int numItems) {
@@ -211,7 +243,7 @@ public class SynTest implements Opcodes {
     do_print_stat(numItems, true);
   }
 
-  public static long do_measure(long times) {
+  private static long do_measure(long times) {
     long start = System.currentTimeMillis();
     for (long j = 0; j < times; ++j) {
       for (int i = 0; i < numClasses; ++i) {
@@ -222,7 +254,7 @@ public class SynTest implements Opcodes {
     return end - start;
   }
 
-  public static void do_print_stat(int numItems, boolean last_call) {
+  private static void do_print_stat(int numItems, boolean last_call) {
     long total = 0;
     for (int i = 0; i < numItems; ++i) {
       total += batchTime[i];
@@ -245,6 +277,33 @@ public class SynTest implements Opcodes {
     System.out.printf("Results %d (%f +- %f)\n", total, mean, std);
   }
 
+  private static void do_execute_test() {
+    printMemoryUsage();
+    printCompiledMethods();
+
+    System.out.println("Warming Up");
+    for (int j = 0; j < warmUps; ++j) {
+      for (int i = 0; i < numClasses; ++i) {
+        runResult += dtrs[i].doit(i, j, 100);
+      }
+    }
+    System.out.println("Warmup result:" + runResult);
+
+    printMemoryUsage();
+    printCompiledMethods();
+
+    System.out.println("Executing");
+    for (int i = 0; i < numBatches; ++i) {
+      batchTime[i] = do_measure(itersPerBatch);
+      printStat(i+1);
+    }
+
+    System.out.println("Execution result:" + runResult);
+
+    printMemoryUsage();
+    printCompiledMethods();
+  }
+
   public static void main(String args[]) {
     System.out.println("Syntetic test starting ...");
 
@@ -254,6 +313,7 @@ public class SynTest implements Opcodes {
     options.addOption("c", "classes", true, "Number of classes to run (default 20_000)");
     options.addOption("i", "iterations", true, "Number of iterations within a batch (default 1_000)");
     options.addOption("w", "warmups", true, "Number of warm-up iterations (default 10_000)");
+    options.addOption("d", "directives", true, "Additional compiler directives file");
     options.addOption("help", false, "Print this message");
 
     try {
@@ -277,6 +337,9 @@ public class SynTest implements Opcodes {
       if(cmd.hasOption("warmups")) {
         warmUps = Integer.valueOf(cmd.getOptionValue("warmups"));
       }
+      if(cmd.hasOption("directives")) {
+        compilerDirectivesFile = cmd.getOptionValue("directives");
+      }
 
       dtrs = new SynTestRunner[numClasses];
       batchTime = new long[numBatches];
@@ -291,8 +354,6 @@ public class SynTest implements Opcodes {
 
     try {
       memoryBeans = ManagementFactory.getMemoryPoolMXBeans();
-      printMemoryUsage();
-      printCompiledMethods();
 
       System.out.println("Generating");
       for (int i = 0; i < numClasses; ++i) {
@@ -305,27 +366,13 @@ public class SynTest implements Opcodes {
 
       System.out.println("Smoke check: " + dtrs[0].add(2,2) + " " + dtrs[0].doit(2,2,2));
 
-      System.out.println("Warming Up");
-      for (int j = 0; j < warmUps; ++j) {
-        for (int i = 0; i < numClasses; ++i) {
-          runResult += dtrs[i].doit(i, j, 100);
-        }
+      do_execute_test();
+
+      if (compilerDirectivesFile != null) {
+        System.out.println("Reloading compiler directives from: " + compilerDirectivesFile);
+        reloadCompilerDirectives(compilerDirectivesFile);
+        do_execute_test();
       }
-      System.out.println("Warmup result:" + runResult);
-
-      printMemoryUsage();
-      printCompiledMethods();
-
-      System.out.println("Executing");
-      for (int i = 0; i < numBatches; ++i) {
-        batchTime[i] = do_measure(itersPerBatch);
-        printStat(i+1);
-      }
-
-      System.out.println("Execution result:" + runResult);
-
-      printMemoryUsage();
-      printCompiledMethods();
 
       printFinalStat(numBatches);
 
