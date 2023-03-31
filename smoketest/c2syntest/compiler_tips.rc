@@ -5,7 +5,7 @@
        Enable: false
     },
     c2: {
-       PrintCompilation: false
+       Exclude: false
     }
  },
  {
