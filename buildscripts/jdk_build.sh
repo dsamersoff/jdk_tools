@@ -51,6 +51,8 @@ done
 
 [ "x${_confname}" = "xshort" ] && _confname="${_flavor}"
 
+_acceptable_boot_versions="default"
+
 # Try to guess correct boot jdk
 # it should be jdk11 jdk14 etc under _jdk_collection_root
 if [ "x$JDK_COLLECTION_ROOT" != "x" ]
@@ -68,12 +70,16 @@ then
   . ./make/conf/version-numbers.conf 
 fi  
 
-if [ "x${DEFAULT_ACCEPTABLE_BOOT_VERSIONS}" = "x" ]
+[ "x${DEFAULT_ACCEPTABLE_BOOT_VERSIONS}" != "x" ] && _acceptable_boot_versions=${DEFAULT_ACCEPTABLE_BOOT_VERSIONS}
+[ "x${ACCEPTABLE_BOOT_VERSIONS}" != "x" ] && _acceptable_boot_versions=${ACCEPTABLE_BOOT_VERSIONS}
+
+
+if [ "${_acceptable_boot_versions}" = "default" ]
 then
   echo "Can't gess BOOT JDK from the ws, assume we are on jdk8"
   if [ -f ./make/jprt.properties ]
   then
-    DEFAULT_ACCEPTABLE_BOOT_VERSIONS=8
+    _acceptable_boot_versions=8
 
     # We are building for jdk8 family, do some adjustment
     if [ "x${_nowerror}" = "xyes" ]
@@ -90,9 +96,9 @@ fi
 
 if [ "x${_boot_jdk}" = "xdefault" ]
 then
-  if [ "x${DEFAULT_ACCEPTABLE_BOOT_VERSIONS}" != "x" ]
+  if [ "${_acceptable_boot_versions}" != "default" ]
   then
-    for jdk_ver in $DEFAULT_ACCEPTABLE_BOOT_VERSIONS
+    for jdk_ver in ${_acceptable_boot_versions}
     do
       coll_root=`echo $_jdk_collection_root | sed -e "s/:/ /g"`
       try_ver=`find $coll_root -maxdepth 1 -type d -name "jdk-${jdk_ver}*" -o -name "jdk${jdk_ver}*" | head -1` 2>/dev/null
@@ -111,12 +117,12 @@ then
 fi
 
 # Basic parameters
-configure_params=" \
- ${_pch} \
- ${_nowerror} \
- ${_headless} \
---disable-ccache \
---with-boot-jdk=${_boot_jdk}"
+configure_params=" ${_pch} ${_nowerror} ${_headless} --disable-ccache"
+
+if [ "x${_boot_jdk}" != "default" ]
+then
+  configure_params="${configure_params} --with-boot-jdk=${_boot_jdk}"
+fi
 
 # Set number of jobs to value convenient for development
 # If that fails, fallback to configure logic that uses CPU aggressively
