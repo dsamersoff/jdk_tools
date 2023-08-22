@@ -55,7 +55,7 @@ fi
 
 jtreg_options="${jtreg_options} -compilejdk:${COMPJAVA}" 
 
-[ "x$JTWORK" = "x" ] && JTWORK="/tmp/jtreg-dms"
+[ "x$JTWORK" = "x" ] && JTWORK="/tmp/jtreg-${JAVA_FAMILY}"
 [ "x$JTREPORT" = "x" ] && JTREPORT=${JTWORK}
 
 jtreg_options="${jtreg_options} -reportDir:${JTREPORT}/JTreport -workDir:${JTWORK}/JTwork"
@@ -104,6 +104,9 @@ then
   fi
 
 fi
+
+export TEST_VM_FLAGLESS=true
+
 
 jtreg_options="${jtreg_options} -retain:fail,error"
 
