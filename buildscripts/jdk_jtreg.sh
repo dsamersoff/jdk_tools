@@ -110,11 +110,12 @@ export TEST_VM_FLAGLESS=true
 
 jtreg_options="${jtreg_options} -retain:fail,error"
 
+#   -vmoption:-Xmx2048m\
+
 jtreg_options="${jtreg_options} \
    -J-Djavatest.maxOutputSize=9000000 \
    -verbose:all \
    -ignore:run \
-   -vmoption:-Xmx2048m\
    -timeoutFactor:8 
 "
  
