@@ -6,7 +6,7 @@
 
 _HELP="""
 The program to sync current machine folder with owncloud instance
-Basic usage: 
+Basic usage:
  ./owncsync.py -l user:password -d|-u file1 dir2 ... ...
 
 Command line options:
@@ -17,9 +17,9 @@ Command line options:
  -p prefix         Prefix destination path with directory on upload, hostname by default
  -P                Don't prefix destination path with hostname on upload
  -t int            Tolerance time value in seconds, files with difference less than this time treated as the same
- -u                Upload files from path, default mode 
+ -u                Upload files from path, default mode
  -v int            Level of verbosity 0 silent, 9 debug
- 
+
  All these options could be set in ini file, it will be created in the user home directory on the first run.
  System wide ini in /etc, /usr/local/etc, /opt/etc are respected
 """
@@ -34,13 +34,14 @@ from datetime import datetime, timedelta
 from signal import signal, SIGINT
 
 try:
-  import owncloud
+  import nextcloud_client as cloud
+  HTTPResponseError = cloud.nextcloud_client.HTTPResponseError
 except ImportError as ex:
-  print("Error: %s, run: pip install pyocclient" % str(ex))
+  print("Error: %s, run: pip install pyncclient" % str(ex))
   sys.exit(-1)
 
 _cloud = "4foo.net"
-_oc_url = "https://cloud.4foo.net/owncloud"
+_oc_url = "https://cloud.4foo.net/nextcloud"
 _user = "ojdk"
 _password = None
 _overwrite = "never" # never, always, check
@@ -51,8 +52,8 @@ _mode = "upload"
 _ini_name = ".ownsync.ini"
 _host = platform.uname()[1]
 
-# BEGIN: Disable SSL certificates check for requests lib  
-import requests, urllib3 
+# BEGIN: Disable SSL certificates check for requests lib
+import requests, urllib3
 from requests.packages.urllib3.exceptions import InsecureRequestWarning #pylint: disable=import-error,no-member
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning) #pylint: disable=import-error,no-member
@@ -83,7 +84,7 @@ def compare_dates(a, b):
     difference = (a - b).total_seconds()
     if difference > _tolerance:
       return True
-  return False    
+  return False
 
 def format_dates(a, b):
   """ Format date difference in printable way """
@@ -98,22 +99,22 @@ class ocWrapper(object):
     self.url = url
     self.user = username
     self.password = password
-    self.hostname = hostname 
+    self.hostname = hostname
     self.oc = None
 
-  def connect(self):  
+  def connect(self):
     """ Connect to cloud with error check """
     try:
-      self.oc = owncloud.Client(self.url)
+      self.oc = cloud.Client(self.url)
       self.oc.login(self.user, self.password)
-    except owncloud.owncloud.HTTPResponseError as ex:  
+    except HTTPResponseError as ex:
       if ex.status_code == 401:
         fatal("Authentication failed for '%s' as '%s'" % (self.url, self.user), ex)
       else:
         raise ex
-    return 
+    return
 
-  def make_root(self):  
+  def make_root(self):
     """ Make root directory """
     if self.hostname != "":
       self.mkdir("")
@@ -122,17 +123,17 @@ class ocWrapper(object):
     """Convert remote path to unified form """
     (drive, tail) = os.path.splitdrive(dst) #pylint: disable=unused-variable
     tail = os.path.normpath(tail)
-    path_elements = [ self.hostname ] if prefix_hostname else [] 
+    path_elements = [ self.hostname ] if prefix_hostname else []
     path_elements += tail.split(os.sep)
     return "/".join(path_elements)
- 
+
   def mkdir(self, dst):
     """ Make remote directory with response check"""
     dstname = self.normpath(dst)
     try:
-      print_vb(3, "Mkdir '%s'" % dstname)  
+      print_vb(3, "Mkdir '%s'" % dstname)
       self.oc.mkdir(dstname)
-    except owncloud.owncloud.HTTPResponseError as ex:  
+    except HTTPResponseError as ex:
       if ex.status_code == 405:
         """ Ignore file already exists error """
         print_vb(9, "Error creating '%s' '%s' (ignored)" % (dstname, str(ex)))
@@ -146,9 +147,9 @@ class ocWrapper(object):
     for dst_item in dst_path:
       dstname = dstname + "/" + dst_item
       try:
-        print_vb(3, "Mkdir '%s'" % dstname)  
+        print_vb(3, "Mkdir '%s'" % dstname)
         self.oc.mkdir(dstname)
-      except owncloud.owncloud.HTTPResponseError as ex:  
+      except HTTPResponseError as ex:
         if ex.status_code == 405:
           """ Ignore file already exists error """
           print_vb(9, "Error creating '%s' '%s' (ignored)" % (dstname, str(ex)))
@@ -160,10 +161,10 @@ class ocWrapper(object):
     dstname = self.normpath(dst)
     lmd = None
     try:
-      print_vb(3, "Get lmd '%s'" % dstname)  
+      print_vb(3, "Get lmd '%s'" % dstname)
       file_info = self.oc.file_info(dstname)
       lmd = file_info.get_last_modified()
-    except owncloud.owncloud.HTTPResponseError as ex:  
+    except HTTPResponseError as ex:
       if ex.status_code == 404:
         """ Ignore file doesn't exist error """
         print_vb(9, "Error reading fileinfo '%s' '%s' (ignored)" % (dstname, str(ex)))
@@ -176,9 +177,9 @@ class ocWrapper(object):
     isdir = False
     dstname = self.normpath(dst, prefix_hostname)
     try:
-      print_vb(3, "Get isdir '%s'" % dstname)  
+      print_vb(3, "Get isdir '%s'" % dstname)
       isdir = self.oc.file_info(dstname).is_dir()
-    except owncloud.owncloud.HTTPResponseError as ex:  
+    except HTTPResponseError as ex:
       if ex.status_code == 404:
         """ Ignore file doesn't exist error """
         print_vb(9, "Error reading fileinfo '%s' '%s' (ignored)" % (dstname, str(ex)))
@@ -192,7 +193,7 @@ class ocWrapper(object):
     src_lmd = datetime.utcfromtimestamp(round(float(t)))
 
     if dst_lmd == None:
-      """ File doesn't exists """   
+      """ File doesn't exists """
       print_vb(2, "Doesn't exist(%s) %s %s" % (_overwrite, dst, str(src_lmd)))
       return True
 
@@ -211,21 +212,21 @@ class ocWrapper(object):
 
   def rm_file(self, remote):
     dstname = self.normpath(remote)
-    print_vb(1, "Deleting '%s'" % dstname)  
+    print_vb(1, "Deleting '%s'" % dstname)
     self.oc.delete(dstname)
 
   def put_file(self, local, remote):
     dstname = self.normpath(remote)
-    print_vb(1, "Upload '%s' => '%s'" % (local, dstname))  
+    print_vb(1, "Upload '%s' => '%s'" % (local, dstname))
     try:
       self.oc.put_file(dstname, local)
-    except owncloud.owncloud.HTTPResponseError as ex:  
+    except HTTPResponseError as ex:
       if ex.status_code == 404:
         """ Cloud returns file doen't exist. It might mean that entire path doesn't exist anymore
             Try to fix the path and repeat """
         print_vb(9, "Error creating '%s' '%s' (fixing)" % (dstname, str(ex)))
         self.mkpath(os.path.dirname(dstname))
-        print_vb(9, "Upload '%s' => '%s'" % (local, dstname))  
+        print_vb(9, "Upload '%s' => '%s'" % (local, dstname))
         self.oc.put_file(dstname, local)
       else:
         raise ex
@@ -234,12 +235,12 @@ class ocWrapper(object):
 
   def get_file(self, remote, local):
     rmtname = self.normpath(remote, False)
-    print_vb(1, "Download '%s' => '%s'" % (rmtname, local))  
+    print_vb(1, "Download '%s' => '%s'" % (rmtname, local))
     self.oc.get_file(remote, local)
 
   def get_dir_as_zip(self, remote, local):
     rmtname = self.normpath(remote, False)
-    print_vb(1, "Zip '%s' => '%s'" % (rmtname, local))  
+    print_vb(1, "Zip '%s' => '%s'" % (rmtname, local))
     self.oc.get_directory_as_zip(remote, local)
 
 # ====================== Entry points ==================================
@@ -248,7 +249,7 @@ def upload_tree(oc, src, dst):
   global _overwrite
 
   if not os.path.isdir(src):
-    if oc.should_copy(_overwrite, src, dst):  
+    if oc.should_copy(_overwrite, src, dst):
       oc.put_file(dst, src)
     return
 
@@ -256,14 +257,14 @@ def upload_tree(oc, src, dst):
   names = os.listdir(src)
   for name in names:
     upload_tree(oc, os.path.join(src, name), os.path.join(dst, name))
-  return 
+  return
 
 def download_zip(oc, local, remote):
   """Download a file of directory as zip"""
   local_name = local
   if oc.is_dir(remote, False):
     if os.path.isdir(local):
-      zipname = remote.split('/')[-1] + ".zip" 
+      zipname = remote.split('/')[-1] + ".zip"
       local_name = os.path.join(local, zipname)
     oc.get_dir_as_zip(remote, local_name)
   else:
@@ -276,9 +277,9 @@ def load_defaults():
   """ Load defaults from the configuration file. """
   global _ini_name, _oc_url, _user, _password, _overwrite, _verbose, _tolerance, _cloud
 
-  inifiles = [ 
-    os.path.join("/etc", _ini_name),   
-    os.path.join("/usr/local/etc", _ini_name),   
+  inifiles = [
+    os.path.join("/etc", _ini_name),
+    os.path.join("/usr/local/etc", _ini_name),
     os.path.join("/opt/etc", _ini_name),
     os.path.expanduser(os.path.join("~", _ini_name))
   ]
@@ -291,13 +292,13 @@ def load_defaults():
       config_loaded = True
 
   if config_loaded:
-    cloud = cfg.get("DEFAULT", "name") 
-    _oc_url = cfg.get(cloud, "url", fallback=_oc_url) 
-    _user = cfg.get(cloud, "user", fallback=_user) 
-    _password = cfg.get(cloud, "password", fallback=None) 
-    _overwrite = cfg.get(cloud, "overwrite", fallback=_overwrite) 
-    _verbose = cfg.getint(cloud, "verbose", fallback=_verbose) 
-    _tolerance = cfg.getint(cloud, "tolerance", fallback=_tolerance) 
+    cloud = cfg.get("DEFAULT", "name")
+    _oc_url = cfg.get(cloud, "url", fallback=_oc_url)
+    _user = cfg.get(cloud, "user", fallback=_user)
+    _password = cfg.get(cloud, "password", fallback=None)
+    _overwrite = cfg.get(cloud, "overwrite", fallback=_overwrite)
+    _verbose = cfg.getint(cloud, "verbose", fallback=_verbose)
+    _tolerance = cfg.getint(cloud, "tolerance", fallback=_tolerance)
   return config_loaded
 
 def store_defaults():
@@ -325,7 +326,7 @@ def signal_handler(signal, frame): #pylint: disable=unused-argument
 
 def usage(msg=None):
   global _HELP
-  if msg != None: 
+  if msg != None:
     print(msg)
   print(_HELP)
   sys.exit(7)
@@ -340,7 +341,7 @@ if __name__ == '__main__':
   try:
     opts, args = getopt.getopt(sys.argv[1:],
                               "hcfl:n:NdpPt:uv:z",
-                              ["help", "check", "force", "login" "download", 
+                              ["help", "check", "force", "login" "download",
                                "prefix", "no-prefix", "tolerance", "upload", "verbose", "zip"])
   except getopt.GetoptError as ex:
     usage(ex)
@@ -381,31 +382,31 @@ if __name__ == '__main__':
   if len(args) == 0:
     usage()
 
-  print_vb(9, "_oc_url = %s" %_oc_url)  
-  print_vb(9, "_user = %s" % _user)  
-  print_vb(9, "_password = %s" % _password)  
-  print_vb(9, "_overwrite = %s" % _overwrite)  
-  print_vb(9, "_tolerance = %s" % _tolerance)  
+  print_vb(9, "_oc_url = %s" %_oc_url)
+  print_vb(9, "_user = %s" % _user)
+  print_vb(9, "_password = %s" % _password)
+  print_vb(9, "_overwrite = %s" % _overwrite)
+  print_vb(9, "_tolerance = %s" % _tolerance)
 
   try:
     assert _overwrite in ["never", "always", "check"], "Bad _overwrite value %s" % _overwrite
     assert _mode in ["upload", "download"], "Bad _mode value %s" % _mode
     assert _password != None, "Password must be set. Check ~/%s file or use -l name:password" % _ini_name
   except AssertionError as ex:
-    usage(ex)  
+    usage(ex)
 
   oc = ocWrapper(_oc_url, _host, _user, _password)
   oc.connect()
 
-  try: 
+  try:
     if _mode == "upload":
       oc.make_root()
-      for arg in args:  
+      for arg in args:
         upload_tree(oc, arg, arg)
     elif _mode == "download":
-      for arg in args:  
+      for arg in args:
         download_zip(oc, ".", arg)
   except Exception as ex:
-    fatal("Error", ex)      
+    fatal("Error", ex)
 
   sys.exit(0)
