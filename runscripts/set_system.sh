@@ -17,7 +17,7 @@ ulimit -n 65536
 sysopt net.ipv4.conf.lo.accept_local 1
 #
 
-sysopt vm.max_map_count 10485
+sysopt vm.max_map_count 131072
 sysopt vm.min_free_kbytes 67584
 sysopt vm.nr_hugepages 0
 sysopt vm.swappiness 10
@@ -28,7 +28,7 @@ sysopt net.core.rmem_default 262144
 sysopt net.core.wmem_default 262144 
 sysopt net.core.rmem_max 262144 
 sysopt net.core.wmem_max 262144 
-sysopt net.core.somaxconn 4096 
+sysopt net.core.somaxconn 8192
 
 
 # some kernels may have no cfq scheduler
