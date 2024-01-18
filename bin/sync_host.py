@@ -51,8 +51,10 @@ class SFTPWrapper:
     self.count = 0
     self.start_time = time.time_ns()
 
-  def copy_with_attr(self, srcname, dstname, srcstat):
+  def copy_with_attr(self, srcname, dstname, srcstat, make_writable):
     """Copy file to server and restore all attributes"""
+    if make_writable:
+      self.sftp.chmod(dstname, 0o666)
     self.sftp.put(srcname, dstname)
     self.sftp.chmod(dstname, srcstat.st_mode)
     self.sftp.utime(dstname, (srcstat.st_atime, srcstat.st_mtime))
@@ -71,9 +73,6 @@ class SFTPWrapper:
       self.sftp.mkdir(dstname)
     except IOError as ex:
       pass
-
-  def make_writable(self, dstname):
-    self.sftp.chmod(dstname, 0o666)
 
   def files_copied(self):
     return self.count
@@ -104,14 +103,14 @@ def copytree(sftp, src, dst):
       if should_copy(srcname):
         srcstat = os.stat(srcname)
         dststat = sftp.stat_no_error(dstname)
-        if dststat != None:
-          if not (_update_only and srcstat.st_mode == dststat.st_mode and math.isclose(srcstat.st_mtime, dststat.st_mtime)):
+        if dststat != None and _update_only:
+          if srcstat.st_mode != dststat.st_mode or math.floor(srcstat.st_mtime) != math.floor(dststat.st_mtime):
             verbose("Copy: %s" % srcname)
-            sftp.make_writable(dstname)
-            sftp.copy_with_attr(srcname, dstname, srcstat)
+            sftp.copy_with_attr(srcname, dstname, srcstat, True)
         else:
           verbose("Copy: %s" % srcname)
-          sftp.copy_with_attr(srcname, dstname, srcstat)
+          make_writable = True if dststat != None else False
+          sftp.copy_with_attr(srcname, dstname, srcstat, make_writable)
 
 def error(msg):
   print("Error: " + msg)
@@ -166,6 +165,9 @@ if __name__ == '__main__':
     _target_host = args[1]
 
   try:
+    if os.getenv("TESTJAVA", None) != None:
+      verbose("Picked $TESTJAVA env")
+
     if _jdk_image == None:
       """ Try to guess from current dir """
       jdk_images = glob.glob("./build/*/images/jdk")
