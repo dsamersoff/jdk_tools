@@ -8,14 +8,15 @@
 #with warnings.catch_warnings():
 #    warnings.filterwarnings("ignore",category=DeprecationWarning)
 
-
-import sys
-import os
-import traceback
 import getopt
-import re
 import getpass
+import glob
 import math
+import os
+import re
+import sys
+import time
+import traceback
 
 import paramiko
 from paramiko.config import SSHConfig
@@ -47,12 +48,15 @@ class SFTPWrapper:
   """Utility wrappers around paramico SFTP"""
   def __init__(self, p_sftp) -> None:
     self.sftp = p_sftp
+    self.count = 0
+    self.start_time = time.time_ns()
 
   def copy_with_attr(self, srcname, dstname, srcstat):
     """Copy file to server and restore all attributes"""
     self.sftp.put(srcname, dstname)
     self.sftp.chmod(dstname, srcstat.st_mode)
     self.sftp.utime(dstname, (srcstat.st_atime, srcstat.st_mtime))
+    self.count += 1
 
   def stat_no_error(self, dstname):
     dst = None
@@ -70,6 +74,13 @@ class SFTPWrapper:
 
   def make_writable(self, dstname):
     self.sftp.chmod(dstname, 0o666)
+
+  def files_copied(self):
+    return self.count
+
+  def exec_time(self):
+    dt = time.time_ns() - self.start_time
+    return (dt//1_000_000_000, (dt - dt//1_000_000_000)//1_000)
 
 # ======================================================================================
 def should_copy(srcname):
@@ -148,28 +159,43 @@ if __name__ == '__main__':
 
   # Source path setup
   if len(args) > 0:
-    """ Set path to copy, override $TESTJAVA"""
+    """ Set path to copy, overrides $TESTJAVA"""
     _jdk_image = args[0]
   if len(args) > 1:
     """ Set host to copy to, override $TESTHOST and -t key"""
     _target_host = args[1]
 
-  assert _jdk_image != None, "Nothing to copy"
-  assert os.path.isdir(_jdk_image), "Path %s dosn't exist or not a directory" % _jdk_image
-  assert os.path.isfile(_jdk_image + "/bin/java"), "Path %s is not a jdk image" % _jdk_image
+  try:
+    if _jdk_image == None:
+      """ Try to guess from current dir """
+      jdk_images = glob.glob("./build/*/images/jdk")
+      assert len(jdk_images) <= 1, "More than one image present, specify image to copy explicitly"
+      if len(jdk_images) == 1:
+        _jdk_image = jdk_images[0]
 
-  verbose("Copy from '%s'" % _jdk_image)
+    assert _jdk_image != None, "Nothing to copy. Specify image to copy in command line or through $TESTJAVA"
 
-  if _copy_all:
-    _skip_debug_info = False # Copy all imply copying of debuginfo
-    _jdk_tests = os.path.abspath(_jdk_image + _jdk_tests)
-    _jdk_tests_native = os.path.abspath(_jdk_image + _jdk_tests_native)
-    assert os.path.isdir(_jdk_tests), "Path %s dosn't exist or not a directory" % _jdk_tests
-    assert os.path.isdir(_jdk_tests_native), "Path %s dosn't exist or not a directory. Run make test-bundles" % _jdk_tests_native
-    verbose("Copy from '%s'" % _jdk_tests)
-    verbose("Copy from '%s'" % _jdk_tests_native)
+    _jdk_image = os.path.abspath(_jdk_image)
 
-  verbose("To host '%s'" % _target_host)
+    assert os.path.isdir(_jdk_image), "Path %s dosn't exist or not a directory" % _jdk_image
+    assert os.path.isfile(_jdk_image + "/bin/java"), "Path %s is not a jdk image" % _jdk_image
+
+    verbose("Copy from '%s'" % _jdk_image)
+
+    if _copy_all:
+      _skip_debug_info = False # Copy all imply copying of debuginfo
+      _jdk_tests = os.path.abspath(_jdk_image + _jdk_tests)
+      _jdk_tests_native = os.path.abspath(_jdk_image + _jdk_tests_native)
+      assert os.path.isdir(_jdk_tests), "Path %s dosn't exist or not a directory" % _jdk_tests
+      assert os.path.isdir(_jdk_tests_native), "Path %s dosn't exist or not a directory. Run make test-bundles" % _jdk_tests_native
+      verbose("Copy from '%s'" % _jdk_tests)
+      verbose("Copy from '%s'" % _jdk_tests_native)
+
+    verbose("To host '%s'" % _target_host)
+
+  except AssertionError as ex:
+    print(ex)
+    sys.exit(1)
 
   # Read SSH config
   ssh_config = SSHConfig()
@@ -201,6 +227,10 @@ if __name__ == '__main__':
     if _copy_all:
       copytree(sftp, _jdk_tests, _target_tests)
       copytree(sftp, _jdk_tests_native, _target_tests_native)
+
+    # Some statistics
+    (ss, ms) = sftp.exec_time()
+    print("Total file copied: %d in %d.%d" % (sftp.files_copied(), ss, ms))
 
   except Exception as e:
     print(repr(e))
