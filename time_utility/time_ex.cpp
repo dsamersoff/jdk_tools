@@ -59,7 +59,7 @@ void bind_to_cpu() {
 }
 
 // Actually exec
-int do_exec(char * const argv[]) {
+int do_exec(int keep_output, char * const argv[]) {
     _pid = vfork();
     if (_pid == -1) {
         perror("vfork");
@@ -68,7 +68,9 @@ int do_exec(char * const argv[]) {
     } else if (_pid == 0) {
         // This is the child process
         // Throw away stdout output from called program
-        CHECK_NULL(freopen("/dev/null", "w", stdout));
+        if (! keep_output) {
+            CHECK_NULL(freopen("/dev/null", "w", stdout));
+        }
         CHECK(execve(argv[0], argv, NULL));
     } else {
         // This is the parent process
@@ -94,7 +96,7 @@ int do_exec(char * const argv[]) {
 
 // Print help and exit. Exit code 7 indicate command line error.
 void usage(const char *prog_name) {
-    fprintf(stderr, "Usage: %s [-w warmap] [-r runs] [-b batches] -- [commad_to_run...]\n", prog_name);
+    fprintf(stderr, "Usage: %s [-w warmap] [-r runs] [-q] -- [commad_to_run...]\n", prog_name);
     exit(7);
 }
 
@@ -116,14 +118,18 @@ int main(int argc, char *argv[]) {
     int opt;
     char * const* argv_ex = NULL;
     int num_warmaps = 0;
-    int num_runs = 0;
+    int num_runs = 1;
+    int keep_output = 1;
 
-    while ((opt = getopt(argc, argv, "r:w:")) != -1) {
+    while ((opt = getopt(argc, argv, "qr:w:")) != -1) {
         switch (opt) {
+            case 'q':
+                keep_output = 0;
+                break;
             case 'r':
                 num_runs = atoi(optarg);
                 break;
-            case 'w':
+           case 'w':
                 num_warmaps = atoi(optarg);
                 break;
             default:
@@ -155,7 +161,7 @@ int main(int argc, char *argv[]) {
 
     // Warming up
     for (int i = 0; i < num_warmaps; i++) {
-        do_exec(argv_ex);
+        do_exec(0 /*always discard output of warmup runs*/, argv_ex);
         if (_should_exit) {
            fprintf(stderr, "Warmup interrupted!\n");
            exit(EXIT_FAILURE);
@@ -175,7 +181,7 @@ int main(int argc, char *argv[]) {
     CHECK(clock_gettime(CLOCK_MONOTONIC, &child_time0));
 
     for (int j = 0; j < num_runs; ++j) {
-        if (do_exec(argv_ex) == 0) {
+        if (do_exec(keep_output, argv_ex) == 0) {
             // Callee terminated normally, with zero exit code, record the run
             CHECK(getrusage(RUSAGE_CHILDREN, &child_ru));
 
