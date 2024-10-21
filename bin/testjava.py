@@ -15,6 +15,11 @@ while True:
     dirlist += d
     break
 
+  d = glob.glob(thispath + "/*/build/*/images/j2sdk-image")  # Check for image for jdk8
+  if len(d) > 0:
+    dirlist += d
+    break
+
   d = glob.glob(thispath + "/*/build/*/jdk")  #  Try to find exploded image 
   if len(d) > 0:
     dirlist += d
