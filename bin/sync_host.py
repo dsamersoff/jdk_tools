@@ -17,6 +17,7 @@ import re
 import sys
 import time
 import traceback
+import logging
 
 import paramiko
 from paramiko.config import SSHConfig
@@ -84,7 +85,7 @@ class SFTPWrapper:
 # ======================================================================================
 def should_copy(srcname):
   """Filter out some files by name, path or extension"""
-  if srcname == "src.zip":
+  if srcname.endswith("/src.zip"):
     return False
   if _skip_debug_info and srcname.endswith(".debuginfo"):
     return False
@@ -208,22 +209,33 @@ if __name__ == '__main__':
     verbose("Can't read ssh config file %s" % repr(e))
 
   host_entry = ssh_config.lookup(_target_host)
+  _target_host = host_entry.get('hostname', _target_host)
   _target_port = host_entry.get('port', _port)
   _username = host_entry.get("user", None)
   if _username == None:
     _username = getpass.getuser()
   _userkeys = host_entry.get("identityfile", _identity_files)
 
+  verbose("Using host '%s':%s" % (_target_host, _target_port))
   verbose("Using username '%s'" % _username)
   verbose("Using IdentityFiles '%s'" % _userkeys)
+
+  logging.basicConfig()
+  logging.getLogger("paramiko").setLevel(logging.DEBUG) 
 
   # connect to host by SFTP
   ssh = paramiko.SSHClient()
   ssh.load_system_host_keys()
   ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
+
+  """ Skip key detection step to workaround paramiko bug """
   try:
-    ssh.connect(_target_host, port=_target_port, username=_username, key_filename=_userkeys)
+    pkey = None
+    with open(_userkeys[0]) as f:
+         pkey = paramiko.RSAKey.from_private_key(f)
+    ssh.connect(_target_host, port=_target_port, username=_username, pkey=pkey, disabled_algorithms=dict(pubkeys=["rsa-sha2-512", "rsa-sha2-256"]), compress=True)
+    # ssh.connect(_target_host, port=_target_port, username=_username, key_filename=_userkeys)
     sftp = SFTPWrapper(ssh.open_sftp())
     copytree(sftp, _jdk_image, _target_image)
     if _copy_all:
