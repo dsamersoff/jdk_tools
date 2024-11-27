@@ -220,8 +220,9 @@ if __name__ == '__main__':
   verbose("Using username '%s'" % _username)
   verbose("Using IdentityFiles '%s'" % _userkeys)
 
-  logging.basicConfig()
-  logging.getLogger("paramiko").setLevel(logging.DEBUG) 
+  # Uncomment to debug paramiko
+  # logging.basicConfig()
+  # logging.getLogger("paramiko").setLevel(logging.DEBUG) 
 
   # connect to host by SFTP
   ssh = paramiko.SSHClient()
