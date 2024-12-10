@@ -34,14 +34,22 @@ from datetime import datetime, timedelta
 from signal import signal, SIGINT
 
 try:
-  import nextcloud_client as cloud
-  HTTPResponseError = cloud.nextcloud_client.HTTPResponseError
+  import owncloud
 except ImportError as ex:
-  print("Error: %s, run: pip install pyncclient" % str(ex))
+  print("Error: %s, run: pip install pyocclient" % str(ex))
   sys.exit(-1)
 
+
+# BEGIN: Disable SSL certificates check for requests lib
+import requests, urllib3
+from requests.packages.urllib3.exceptions import InsecureRequestWarning #pylint: disable=import-error,no-member
+
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning) #pylint: disable=import-error,no-member
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+# END
+
 _cloud = "4foo.net"
-_oc_url = "https://cloud.4foo.net/nextcloud"
+_oc_url = "https://cloud.4foo.net/owncloud"
 _user = "ojdk"
 _password = None
 _overwrite = "never" # never, always, check
@@ -52,14 +60,6 @@ _mode = "upload"
 _ini_name = ".ownsync.ini"
 _host = platform.uname()[1]
 
-# BEGIN: Disable SSL certificates check for requests lib
-import requests, urllib3
-from requests.packages.urllib3.exceptions import InsecureRequestWarning #pylint: disable=import-error,no-member
-
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning) #pylint: disable=import-error,no-member
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-os.environ["CURL_CA_BUNDLE"] = ""
-# END
 
 """ Supporting function """
 def print_vb(level, msg):
@@ -105,9 +105,9 @@ class ocWrapper(object):
   def connect(self):
     """ Connect to cloud with error check """
     try:
-      self.oc = cloud.Client(self.url)
+      self.oc = owncloud.Client(self.url, verify_certs=False)
       self.oc.login(self.user, self.password)
-    except HTTPResponseError as ex:
+    except owncloud.owncloud.HTTPResponseError as ex:
       if ex.status_code == 401:
         fatal("Authentication failed for '%s' as '%s'" % (self.url, self.user), ex)
       else:
@@ -133,7 +133,7 @@ class ocWrapper(object):
     try:
       print_vb(3, "Mkdir '%s'" % dstname)
       self.oc.mkdir(dstname)
-    except HTTPResponseError as ex:
+    except owncloud.owncloud.HTTPResponseError as ex:
       if ex.status_code == 405:
         """ Ignore file already exists error """
         print_vb(9, "Error creating '%s' '%s' (ignored)" % (dstname, str(ex)))
@@ -149,7 +149,7 @@ class ocWrapper(object):
       try:
         print_vb(3, "Mkdir '%s'" % dstname)
         self.oc.mkdir(dstname)
-      except HTTPResponseError as ex:
+      except owncloud.owncloud.HTTPResponseError as ex:
         if ex.status_code == 405:
           """ Ignore file already exists error """
           print_vb(9, "Error creating '%s' '%s' (ignored)" % (dstname, str(ex)))
@@ -164,7 +164,7 @@ class ocWrapper(object):
       print_vb(3, "Get lmd '%s'" % dstname)
       file_info = self.oc.file_info(dstname)
       lmd = file_info.get_last_modified()
-    except HTTPResponseError as ex:
+    except owncloud.owncloud.HTTPResponseError as ex:
       if ex.status_code == 404:
         """ Ignore file doesn't exist error """
         print_vb(9, "Error reading fileinfo '%s' '%s' (ignored)" % (dstname, str(ex)))
@@ -179,7 +179,7 @@ class ocWrapper(object):
     try:
       print_vb(3, "Get isdir '%s'" % dstname)
       isdir = self.oc.file_info(dstname).is_dir()
-    except HTTPResponseError as ex:
+    except owncloud.owncloud.HTTPResponseError as ex:
       if ex.status_code == 404:
         """ Ignore file doesn't exist error """
         print_vb(9, "Error reading fileinfo '%s' '%s' (ignored)" % (dstname, str(ex)))
@@ -220,7 +220,7 @@ class ocWrapper(object):
     print_vb(1, "Upload '%s' => '%s'" % (local, dstname))
     try:
       self.oc.put_file(dstname, local)
-    except HTTPResponseError as ex:
+    except owncloud.owncloud.HTTPResponseError as ex:
       if ex.status_code == 404:
         """ Cloud returns file doen't exist. It might mean that entire path doesn't exist anymore
             Try to fix the path and repeat """
