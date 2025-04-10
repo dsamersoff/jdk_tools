@@ -15,10 +15,14 @@
  * default output is vmstat_{benchmark}_{iteration}.jfr
  * but you can set different recording prefix, e.g.:
  *    -Dvmstat.jfr_recording_prefix="/tmp/some_name_"
+ *
+ * To enable CSV output
+ *   -Dvmstat.csv=yes
  */
 
 import java.lang.Math;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,6 +33,7 @@ import java.lang.management.MemoryType;
 
 import javax.management.ObjectName;
 import javax.management.MBeanServer;
+import com.sun.management.OperatingSystemMXBean;
 
 import org.dacapo.harness.Callback;
 import org.dacapo.harness.CommandLineArgs;
@@ -44,10 +49,16 @@ public class VMStatCallback extends Callback {
   private int theWindow = 0;          // the number of iterations to measure time set by -window
   private int currentIteration = 0;   // Iteration count starts from 1
   private boolean theVerbose = false; // Verbose reproting
+  private boolean outCSV = false;   // Print CSV as well as human readable message
+
   private boolean enableJFR = false;   // Start end stop JFR for each timed run
   private String jfrRecordingPrefix = null; // Filename to store JFR recording
+  private String jfrSettings = null; // JFR settings filename
 
   private List<MemoryPoolMXBean> memoryBeans;
+  private OperatingSystemMXBean osBean;
+
+  private long processCPUTime = 0L;
 
   private String do_run_dcmd(String operationName, String operationArgs[]) {
     String result = null;
@@ -65,7 +76,7 @@ public class VMStatCallback extends Callback {
     return result;
   }
 
-  public void printStat(int iterations) {
+  public void printStat(String benchmark, int iterations) {
     long total = 0;
     int windowStart = theIterations - theWindow;
     for (int i = windowStart; i < iterations; ++i) {
@@ -81,12 +92,15 @@ public class VMStatCallback extends Callback {
     variance = variance / (iterations - windowStart);
 
     double std = Math.sqrt(variance);
-    System.out.println("---------- Execution time ----------");
-    System.out.printf("Average %f ms +- %f, total %d ms\n", mean, std, total);
+    System.out.printf("===== %s Execution Time: Average %.2f ms +- %.2f total(%d) %d ms =====\n",
+                        benchmark, mean, std, (iterations - windowStart), total);
+    if (outCSV) {
+      System.out.printf("#CSV Duration#,%s,%d,%.2f,%.2f\n", benchmark, iterations, mean, std);
+    }
   }
 
-  public void printMemoryUsage() {
-    System.out.println("---------- Memory Usage ----------");
+  public void printMemoryUsage(String benchmark) {
+    System.out.println("===== Memory Usage =====");
     if (memoryBeans == null) {
       System.out.println("MemoryPoolMxBeans is not available.");
       return;
@@ -110,10 +124,36 @@ public class VMStatCallback extends Callback {
     }
 
     System.out.println("");
+
+    if (outCSV) {
+      StringBuilder str = new StringBuilder("#CSV Memory,");
+      str.append(benchmark);
+      for (MemoryPoolMXBean m: memoryBeans) {
+        MemoryUsage u = m.getUsage();
+        str.append(String.format(",%s,%d", m.getName(), u.getUsed()));
+      }
+      System.out.println(str.toString());
+    }
   }
 
-  public void printCompiledMethods() {
-    System.out.println("---------- Compiled Methods Summary ----------");
+  public void printCPUUsage(String benchmark) {
+    if (osBean == null) {
+      System.out.println("===== CPU Usage: OperatingSystemMxBeans is not available. =====");
+      return;
+    }
+
+    long elapsedProcessCpuTime = osBean.getProcessCpuTime() - processCPUTime;
+
+    System.out.printf("===== CPU Usage: Process cpu load %.2f System cpu load %.2f, Elapsed cpu time %.2f ms =====\n",
+             osBean.getProcessCpuLoad() * 100, osBean.getSystemCpuLoad()  * 100, (double) elapsedProcessCpuTime/1000000);
+    if (outCSV) {
+      System.out.printf("#CSV CPU#,%s,%.2f,%.2f,%.2f\n", benchmark,
+             osBean.getProcessCpuLoad() * 100, osBean.getSystemCpuLoad()  * 100, (double) elapsedProcessCpuTime/1000000);
+    }
+  }
+
+  public void printCompiledMethods(String benchmark) {
+    System.out.println("===== Compiled Methods Summary =====");
 
     long counts[] = new long[5];
     long state_counts[] = new long[5];
@@ -146,10 +186,20 @@ public class VMStatCallback extends Callback {
             state_counts[0], state_counts[1], state_counts[2], state_counts[3], state_counts[4]);
     }
     System.out.printf("Total methods in Codecache (all states): %d\n\n", all_count);
+
+    if (outCSV) {
+      System.out.printf("#CSV Compiled#,%s,%d,%d,%d,%d,%d\n", benchmark,
+                              counts[1], counts[2], counts[3], counts[4], all_count);
+    }
   }
 
   public int iterIndex() {
     return currentIteration - 1;
+  }
+
+  public static boolean getBooleanProperty(String name) {
+    String prop_str = System.getProperty(name, "No").toLowerCase();
+    return (prop_str.equals("yes") || prop_str.equals("true"));
   }
 
   /* =================== Dacapo API overloads ========================== */
@@ -159,9 +209,11 @@ public class VMStatCallback extends Callback {
     theIterations = cla.getIterations();
     theVerbose = cla.getVerbose();
 
-    String enableJFR_str = System.getProperty("vmstat.enable_jfr", "No").toLowerCase();
-    enableJFR = (enableJFR_str.equals("yes") || enableJFR_str.equals("true"));
+    outCSV = getBooleanProperty("vmstat.csv");
+
+    enableJFR = getBooleanProperty("vmstat.enable_jfr");
     jfrRecordingPrefix = System.getProperty("vmstat.jfr_recording_prefix", "vmstat_");
+    jfrSettings = System.getProperty("vmstat.jfr_settings");
 
     if (theWindow > theIterations) {
       if (theVerbose) {
@@ -177,6 +229,7 @@ public class VMStatCallback extends Callback {
     }
 
     batchTime = new long[cla.getIterations()];
+
     try {
       memoryBeans = ManagementFactory.getMemoryPoolMXBeans();
     } catch(Throwable ex) {
@@ -186,13 +239,22 @@ public class VMStatCallback extends Callback {
       }
     }
 
+    try {
+      osBean = ManagementFactory.getPlatformMXBean(OperatingSystemMXBean.class);
+    } catch(Throwable ex) {
+      osBean = null;
+      if (theVerbose) {
+        System.err.println("Can't access OperatingSystemMXBean. CPU usage statistics will not be provided.");
+      }
+    }
+
     if (theVerbose) {
       System.out.printf("Running with %d iterations and %d window\n", theIterations, theWindow);
       if (enableJFR) {
         System.out.printf("JFR recording is enabled. Dump will be stored as %s_{benchmark}_{iteration}.jfr\n", jfrRecordingPrefix);
       }
       if (theWindow != theIterations) {
-        System.out.println("-------------- Warming Up ------------\n");
+        System.out.println("===== Warming Up =====\n");
       }
     }
   }
@@ -212,7 +274,7 @@ public class VMStatCallback extends Callback {
     currentIteration += 1;
     if (theVerbose) {
       if (iterIndex() == (theIterations - theWindow)) {
-        System.out.println("-------------- Measuring ------------\n");
+        System.out.println("===== Measuring =====\n");
       }
     }
     if (enableJFR) {
@@ -221,9 +283,21 @@ public class VMStatCallback extends Callback {
         if (theVerbose) {
           System.out.println("Staring JFR, dump will be stored in " + filename);
         }
-        do_run_dcmd("jfrStart", new String[]{ "filename=" + filename });
+
+        ArrayList<String> jfrOptions = new ArrayList<String>();
+	jfrOptions.add("filename=" + filename);
+	if (jfrSettings != null) {
+	   jfrOptions.add("settings=" + jfrSettings);
+	}
+
+	String[] opts = new String[jfrOptions.size()];
+        do_run_dcmd("jfrStart", jfrOptions.toArray(opts));
+	// JFR initialization creates significant overhead,
+	// wait for jfr to complete initialization
+        do_run_dcmd("jfrCheck", new String[]{});
       }
     }
+    processCPUTime = (osBean == null) ? 0 : osBean.getProcessCpuTime();
     startTime = System.currentTimeMillis();
   }
 
@@ -232,7 +306,11 @@ public class VMStatCallback extends Callback {
   public void stop(long duration) {
     long endTime = System.currentTimeMillis();
     batchTime[iterIndex()] = endTime - startTime;
-  }
+
+    if (enableJFR) {
+        do_run_dcmd("jfrStop", new String[]{});
+     }
+   }
 
   @Override
   public void complete(String benchmark, boolean valid) {
@@ -245,14 +323,11 @@ public class VMStatCallback extends Callback {
       System.out.printf("===== DaCapo %s %s %s iteration %d PASSED in %d ms === \n", TestHarness.getBuildVersion(),
                                  benchmark, wmode, currentIteration, batchTime[iterIndex()]);
       if (iterIndex() >= (theIterations - theWindow)) {
-        printStat(currentIteration);
-        printMemoryUsage();
-        printCompiledMethods();
+        printStat(benchmark, currentIteration);
+        printCPUUsage(benchmark);
+        printMemoryUsage(benchmark);
+        printCompiledMethods(benchmark);
         System.out.flush();
-
-        if (enableJFR) {
-          do_run_dcmd("jfrStop", new String[]{});
-        }
       }
     }
   }

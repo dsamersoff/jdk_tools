@@ -1,12 +1,14 @@
 JAVAC=$(JAVA_HOME)/bin/javac
-DACAPO=/usr/share/benchmarks/dacapo/dacapochopin.jar
+
+DACAPO?=/opt/dacapo/dacapochopin.jar
+DSO=perf_callback.so
 
 CLASSES=VMStatCallback.class PerfCallback.class
 
-all: $(CLASSES)
+all: $(CLASSES) $(DSO)
 
 clean:
-	rm -f $(CLASSES) 
+	rm -f $(CLASSES) $(DSO)
 
 VMStatCallback.class: VMStatCallback.java
 	$(JAVAC) -cp $(DACAPO) $<
@@ -14,4 +16,5 @@ VMStatCallback.class: VMStatCallback.java
 PerfCallback.class: PerfCallback.java
 	$(JAVAC) -cp $(DACAPO) $<
 
-# g++ -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux perf_events.cpp -o perf_events.so -shared -fPIC
+perf_callback.so: perf_callback.c PerfCallback.h
+	$(CC) -shared -fPIC -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -o $@ $<
