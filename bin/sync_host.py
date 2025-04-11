@@ -40,7 +40,7 @@ _jdk_tests_native = "/../../support/test/hotspot/jtreg/native"
 _copy_all = False
 
 # ===== Target Host layout ================
-_target_host = os.getenv("TESTHOST", "pi64")
+_target_host = os.getenv("TESTHOST", "guest")
 _target_image = "/export/ojdk/jdk"
 _target_tests = "/export/ojdk/tests"
 _target_tests_native = "/export/ojdk/native"
