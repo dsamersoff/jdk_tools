@@ -1,6 +1,6 @@
 JAVAC=$(JAVA_HOME)/bin/javac
 
-DACAPO?=/opt/dacapo/dacapochopin.jar
+DACAPO?=/opt/dacapo/dacapo-chopin.jar
 DSO=perf_callback.so
 
 CLASSES=VMStatCallback.class PerfCallback.class
