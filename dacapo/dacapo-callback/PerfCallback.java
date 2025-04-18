@@ -24,7 +24,9 @@ public class PerfCallback extends Callback {
 
   private String perfEventType_str = null;
   private int perfEventType = -1;
-  private int perfEvent = -1;
+
+  private int[] perfEvents;
+  private int[] perfFDs;
 
   static {
     String perf_lib = System.getProperty("perf.lib", "perf_callback.so");
@@ -80,6 +82,20 @@ public class PerfCallback extends Callback {
       return eventType;
   }
 
+  public void startEvents() {
+    for (int i = 0; i < perfEvents.length; i++) {
+      perfFDs[i] = startPerfEvent(perfEventType, perfEvents[i]);
+    }
+  }
+
+  public void stopEvents() {
+    for (int i = 0; i < perfFDs.length; i++) {
+      long res = stopPerfEvent(perfFDs[i]);
+      System.out.printf("Perf counter (%s:0x%x): %d\n", perfEventType_str, perfEvents[i], res);
+    }
+    System.out.flush();
+  }
+
   /* =================== Dacapo API overloads ========================== */
   public PerfCallback(CommandLineArgs cla) {
     super(cla);
@@ -87,12 +103,23 @@ public class PerfCallback extends Callback {
     theIterations = cla.getIterations();
     theVerbose = cla.getVerbose();
 
+    // Read event type
     perfEventType_str = System.getProperty("perf.type");
     perfEventType = get_event_type(perfEventType_str);
     if (perfEventType < 0) {
       throw new RuntimeException("Invalid perf event type " + perfEventType_str + " Should be: HARDWARE, SOFTWARE, TRACEPOINT, HW_CACHE, RAW, BREAKPOINT");
     }
-    perfEvent = Integer.parseInt(System.getProperty("perf.event"));
+
+    // Read list of events
+    String perfEvents_str = System.getProperty("perf.event");
+    String[] perfEvents_arr = perfEvents_str.split("[,;]");
+
+    perfEvents = new int[perfEvents_arr.length];
+    perfFDs = new int[perfEvents_arr.length];
+
+    for (int i = 0; i < perfEvents_arr.length; i++) {
+      perfEvents[i]  = Integer.parseInt(perfEvents_arr[i], 16);
+    }
 
     if (theWindow > theIterations) {
       if (theVerbose) {
@@ -134,7 +161,7 @@ public class PerfCallback extends Callback {
         System.out.println("-------------- Measuring ------------\n");
       }
     }
-    perfFD = startPerfEvent(perfEventType, perfEvent);
+    startEvents();
     startTime = System.currentTimeMillis();
   }
 
@@ -157,9 +184,7 @@ public class PerfCallback extends Callback {
                                  benchmark, wmode, currentIteration, batchTime[iterIndex()]);
       if (iterIndex() >= (theIterations - theWindow)) {
         printStat(currentIteration);
-        long res = stopPerfEvent(perfFD);
-        System.out.printf("Perf counter (%s:%d): %d\n", perfEventType_str, perfEvent, res);
-        System.out.flush();
+        stopEvents();
       }
     }
   }
