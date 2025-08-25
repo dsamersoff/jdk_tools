@@ -47,7 +47,7 @@ function run_group() {
     echo -e "\t$BE_NAME PID = $!"
 }
 
-echo "RunMe $VERSION Numa: $NUMA GROUPS: $GROUP_COUNT ($TI_VMS_COUNT)"
+echo "RunMe $VERSION Numa: $NUMA GROUPS: $GROUP_COUNT ($TI_JVM_COUNT)"
 echo "Using JDK: $JAVA_HOME"
 echo "JAVA Family is $JAVA_FAMILY"
 echo "JBB: $JBB_HOME"
