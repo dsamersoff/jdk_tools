@@ -41,9 +41,9 @@ _copy_all = False
 
 # ===== Target Host layout ================
 _target_host = os.getenv("TESTHOST", "guest")
-_target_image = "/export/ojdk/jdk"
-_target_tests = "/export/ojdk/tests"
-_target_tests_native = "/export/ojdk/native"
+_target_image = "/export/jdk"
+_target_tests = "/export/tests"
+_target_tests_native = "/export/native"
 
 class SFTPWrapper:
   """Utility wrappers around paramico SFTP"""
