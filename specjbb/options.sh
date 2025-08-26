@@ -1,8 +1,8 @@
 #!/bin/bash
-OPT_VERSION="3.01 2025-08-23"
+OPT_VERSION="3.02 2025-08-23"
 
 # JAVA_HOME and JBB_HOME
-JAVA_HOME="/opt/jdk-11"
+JAVA_HOME="/opt/jdk-21"
 JBB_HOME="/opt/specjbb2015-1.03a"
 
 # Check active users, docker presence and other conditions that may affect results
@@ -20,12 +20,10 @@ SET_SYSTEM=Yes
 # Multivm setup, ignored in composite mode
 
 # Number of Groups (TxInjectors mapped to Backend) to expect
+# Number of TxInjectors is set to 1
 # Support 0, 1, 2, 4 groups. 0 means composite
 # Note: 4 groups on 1 socket and 3 groups doesn't have sense
 GROUP_COUNT=2
-
-# Number of TxInjector JVMs to expect in each Group
-TI_JVM_COUNT=1
 
 # Tuning
 # For controller in MVM mode
@@ -83,7 +81,7 @@ SYSFILE_OPTS="\
 SPEC_OPTS_CTL="\
     ${SPEC_OPTS} \
     -Dspecjbb.group.count=$GROUP_COUNT \
-    -Dspecjbb.txi.pergroup.count=$TI_JVM_COUNT \
+    -Dspecjbb.txi.pergroup.count=1 \
 "
 
 SPEC_OPTS_TI="\
@@ -168,7 +166,6 @@ echo "JBB_HOME: $JBB_HOME" >> options.txt
 echo "JAVA_HOME: $JAVA_HOME" >> options.txt
 echo "JAVA_FAMILY: $JAVA_FAMILY" >> options.txt
 echo "GROUP_COUNT: $GROUP_COUNT" >> options.txt
-echo "TI_JVM_COUNT: $TI_JVM_COUNT" >> options.txt
 echo "NUMA: $NUMA" >> options.txt
 echo "$SPEC_OPTS"  | sed -e 's/ \+/\nSPEC_OPTS: /g' >> options.txt
 echo "$JAVA_OPTS"  | sed -e 's/ \+/\nJAVA_OPTS: /g' >> options.txt

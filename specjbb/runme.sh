@@ -1,7 +1,7 @@
 #!/bin/bash
 # Script for running SPECjbb2015, supports JDK11 or later
 
-VERSION="3.01 2025-08-23"
+VERSION="3.02 2025-08-23"
 
 NUM_OF_RUNS=1
 [ "x$1" != "x" ] && NUM_OF_RUNS=$1
@@ -47,7 +47,7 @@ function run_group() {
     echo -e "\t$BE_NAME PID = $!"
 }
 
-echo "RunMe $VERSION Numa: $NUMA GROUPS: $GROUP_COUNT ($TI_JVM_COUNT)"
+echo "RunMe $VERSION Numa: $NUMA GROUPS: $GROUP_COUNT"
 echo "Using JDK: $JAVA_HOME"
 echo "JAVA Family is $JAVA_FAMILY"
 echo "JBB: $JBB_HOME"
@@ -141,7 +141,7 @@ for ((n=1; $n<=$NUM_OF_RUNS; n=$n+1)); do
         echo
         echo "SPECjbb2015 is running..."
         echo "Monitoring $result/${NAME}.log for progress"
-        tail --pid=${BE_PID} -f ./${NAME}.log
+        tail --pid=${PID} -f ./${NAME}.log
     fi
 
     echo "SPECjbb2015 has finished"
