@@ -11,8 +11,8 @@ VALIDATE_ENV=Yes
 
 # Use or not numactl
 # 1 or 2 sockets supported
-# GROUPS 0 NUMA Yes means composite run bound to 1 socket
-NUMA=Yes
+# GROUPS 0 CPU_BIND Yes means composite run bound to 1 socket
+CPU_BIND=Yes
 
 # Set OS parameters using sysctl
 SET_SYSTEM=Yes
@@ -117,7 +117,7 @@ JAVA_OPTS_BE="\
 # Nothing to edit below this line
 # ---------------------------------
 
-if [ "x$NUMA" = "xYes" ]
+if [ "x$CPU_BIND" = "xYes" ]
 then
     NUMA_CMD="/usr/bin/numactl --localalloc --cpunodebind"
 fi
@@ -166,7 +166,7 @@ echo "JBB_HOME: $JBB_HOME" >> options.txt
 echo "JAVA_HOME: $JAVA_HOME" >> options.txt
 echo "JAVA_FAMILY: $JAVA_FAMILY" >> options.txt
 echo "GROUP_COUNT: $GROUP_COUNT" >> options.txt
-echo "NUMA: $NUMA" >> options.txt
+echo "CPU_BIND: $CPU_BIND" >> options.txt
 echo "$SPEC_OPTS"  | sed -e 's/ \+/\nSPEC_OPTS: /g' >> options.txt
 echo "$JAVA_OPTS"  | sed -e 's/ \+/\nJAVA_OPTS: /g' >> options.txt
 echo "DEBUG_OPTS: $DEBUG_OPTS" >> options.txt

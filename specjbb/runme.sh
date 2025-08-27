@@ -17,7 +17,7 @@ function run_group() {
     gnum=$1
     cpunode=$2
 
-    [ "x$NUMA" = "xYes" ] && THE_NUMA_CMD="${NUMA_CMD}=$cpunode"
+    [ "x$CPU_BIND" = "xYes" ] && THE_NUMA_CMD="${NUMA_CMD}=$cpunode"
 
     GROUPID=Group$gnum
     echo -e "\nStarting JVMs from $GROUPID:"
@@ -47,7 +47,7 @@ function run_group() {
     echo -e "\t$BE_NAME PID = $!"
 }
 
-echo "RunMe $VERSION Numa: $NUMA GROUPS: $GROUP_COUNT"
+echo "RunMe $VERSION CPU Bind: $CPU_BIND GROUPS: $GROUP_COUNT"
 echo "Using JDK: $JAVA_HOME"
 echo "JAVA Family is $JAVA_FAMILY"
 echo "JBB: $JBB_HOME"
@@ -129,7 +129,7 @@ for ((n=1; $n<=$NUM_OF_RUNS; n=$n+1)); do
 
     else
         echo "Launching SPECjbb2015 in CompositeJVM mode..."
-        [ "x$NUMA" = "xYes" ] && NUMA_CMD="${NUMA_CMD}=0"
+        [ "x$CPU_BIND" = "xYes" ] && NUMA_CMD="${NUMA_CMD}=0"
         NAME="Composite"
         DEBUG_OPTS="${DEBUG_OPTS}:${NAME}.gc.log"
         CMD="$JAVA $JAVA_OPTS $DEBUG_OPTS $SPEC_OPTS -jar ${JBB_HOME}/specjbb2015.jar -m COMPOSITE"
