@@ -18,7 +18,7 @@ from openpyxl import Workbook
 # benchmark_pattern1 = re.compile(r"^===== DaCapo .+? (\w+) TIMED iteration \d PASSED in (\d+) ms")
 benchmark_pattern = re.compile(r"^===== DaCapo .+? (\w+) .*PASSED in (\d+) ms")
 avg_time_pattern = re.compile(r"^Average ([\d\.]+) ms")
-counter_pattern = re.compile(r"^Perf counter \((RAW:0x[\da-fA-F]+)\): (\d+)")
+counter_pattern = re.compile(r"^Perf counter \(([A-Z]+):(0x[\da-fA-F]+)\): (\d+)")
 
 class Iteration:
     def __init__(self):
@@ -50,8 +50,9 @@ def extract_data_from_file(file_path):
                 results[-1].time_avg = float(match.group(1))
             match = counter_pattern.search(line)
             if match:
-                counter = match.group(1)
-                value = int(match.group(2))
+                counter_type = match.group(1)
+                counter = match.group(2)
+                value = int(match.group(3))
                 results[-1].counters[counter] = value
 
     return results[-1] if len(results) > 0 else None
