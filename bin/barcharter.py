@@ -2,10 +2,22 @@
 # -*- coding: utf-8 -*-
 # vim: expandtab shiftwidth=2 softtabstop=2
 
+
+_BANNER="""
+  Simple BarCharter
+  Version 1.000 2020-09-25
+  Author: Dmitry Samersoff dms@samersoff.net
+"""
+
 import sys
+import getopt
+
 import matplotlib.pyplot as plt
 import numpy as np
 from openpyxl import load_workbook
+
+_logscale = False
+_display = False
 
 def read_xlsx(filename, sheetname):
     wb = load_workbook(filename=filename, data_only=True)
@@ -29,13 +41,16 @@ def read_xlsx(filename, sheetname):
 
     return labels, data
 
-def main():
-    if len(sys.argv) != 3:
-        print(f"Usage: {sys.argv[0]} <xlsx_file> <sheet_name>")
-        sys.exit(1)
+def usage(msg=None):
+  global _HELP
+  if msg is not None:
+    print ("Error: %s" % msg)
+  print(_HELP)
+  sys.exit(7)
 
-    filename = sys.argv[1]
-    sheetname = sys.argv[2]
+def main(args):
+    filename = args[0]
+    sheetname = args[1]
 
     labels, data = read_xlsx(filename, sheetname)
 
@@ -51,21 +66,57 @@ def main():
     x = np.arange(n_benchmarks)  # positions
     width = 0.2  # bar width
 
+    group_space = 0.3  # extra space between groups
+
+    # make x positions with extra spacing
+    x = np.arange(n_benchmarks) * (n_groups * width + group_space)
+
     fig, ax = plt.subplots(figsize=(14, 7))
 
     for i in range(n_groups):
         ax.bar(x + i*width, values[:, i], width, label=labels[i])
 
     ax.set_ylabel('Values')
-    ax.set_title('Benchmark Results')
+    ax.set_title(sheetname)
     ax.set_xticks(x + width * (n_groups-1) / 2)
     ax.set_xticklabels(benchmarks, rotation=45, ha="right")
     ax.legend()
-    plt.tight_layout()
 
-    plt.savefig("barchart_%s.png" % sys.argv[2], dpi=300)
-    plt.show()
+    if _logscale:
+      plt.yscale("log")
+
+    plt.tight_layout()
+    plt.savefig("barchart_%s.png" % sheetname, dpi=300)
+
+    if _display:
+      plt.show()
 
 if __name__ == "__main__":
-    main()
+
+  try:
+    opts, args = getopt.getopt(sys.argv[1:],
+                                "hVdl",
+                               ["help", "version", "display", "logscale"])
+
+    for o, a in opts:
+      if o in ("-h", "--help", "-V", "--version"):
+        print(_BANNER)
+        if o in ("-h", "--help"):
+          usage()
+        sys.exit(7)
+      elif o in ("-d", "--display"):
+        _display = True 
+      elif o in ("-l", "--logscale"):
+        _logscale = True 
+      else:
+        assert False, "Unhandled option '%s'" % o
+
+  # except getopt.GetoptError as ex:
+  except Exception as ex:
+    usage("Bad command line: %s (%s) " % (str(ex), repr(sys.argv[1:])))
+
+  if len(args) != 2:
+    usage()
+
+  main(args)
 

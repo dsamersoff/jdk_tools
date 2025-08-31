@@ -2,7 +2,13 @@
 
 import os
 import re
-from openpyxl import Workbook
+
+_excel = False
+try:
+    from openpyxl import Workbook
+    _excel = True
+except Exception as ex:
+    print("Warning! openpyxl is not installed") 
 
 # Patterns to extract required data
 # ===== DaCapo 23.11-MR2-chopin avrora PASSED in 37673 msec =====
@@ -97,8 +103,12 @@ if __name__ == "__main__":
     output_excel = "benchmark_results.xlsx"
 
     extracted_data = read_all_files_in_directory(input_directory)
-    write_to_excel(extracted_data, output_excel)
+    if len(extracted_data) > 0:
+      if _excel:
+        write_to_excel(extracted_data, output_excel)
 
-    # Write data rows
-    for iter in extracted_data:
+      # Write data to tty 
+      for iter in extracted_data:
         print(iter)
+    else:
+      print("No data found")
