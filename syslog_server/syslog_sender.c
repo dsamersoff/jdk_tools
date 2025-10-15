@@ -39,7 +39,8 @@ void send_syslog_udp(const char* server, int server_port, int priority, const ch
     get_current_timestamp(timestamp, sizeof(timestamp));
 
     char packet[1024];
-    snprintf(packet, sizeof(packet), "<%d>%s %s: %s", priority, timestamp, tag, message);
+    int bytes_written = snprintf(packet, sizeof(packet), "<%d>%s %s: %s", priority, timestamp, tag, message);
+    fprintf(stdout, "snprintf wrote %d bytes\n", bytes_written);
 
     // Get the server IP address
     struct hostent* server_info = gethostbyname(server);
