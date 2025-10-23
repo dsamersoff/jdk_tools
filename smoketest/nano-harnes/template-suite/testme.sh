@@ -13,7 +13,23 @@ _skip_list=""
 
 start_run
 
+# List all tmp files to be deleted on exit
+cleanup_list="ziplister.class"
+
 # Perform additional initialization
+prepare_run() {
+    extract_precompiled_if_exist
+    [ "$?" -eq 0 ] && return
+
+    for jf in ziplister.java
+    do
+        do_javac \
+            --source-path="${_rt}" \
+            -d $_tmpdir $_rt/$jf
+    done
+
+    build_precompiled
+}
 
 # ==== Define tests
 test_001() {
@@ -37,7 +53,7 @@ test_003() {
 }
 
 # ====== Execute
+prepare_run
 do_run
-# List all tmp files to be deleted below
-cleanup_run testme.txt
+cleanup_run $cleanup_list
 finish_run

@@ -1,14 +1,27 @@
+#!/bin/false
+# Nano harness part
 # Don't run, this is include file
 
-# Define basic harnes constants
+if [ "x${BASH_VERSION}" = "x" ]; then
+   echo "Bash required, exiting"
+   exit 1
+fi
+
+# Define basic harness constants
 _rt=`dirname $0`
 _rt=`cd $_rt && pwd`
 
 _suite=`basename $_rt`
-_tmpdir="$_rt/scratch"
-_testlog="$_rt/${_suite}-test.log"
 
-cd "$_rt"
+_tmp_root="/tmp/nanohar"
+[ "x${NANOHAR_TMP_ROOT}" != "x" ] && _tmp_root="${NANOHAR_TMP_ROOT}"
+
+_tmpdir="${_tmp_root}/${_suite}/scratch"
+_testlog="${_tmp_root}/${_suite}-test.log"
+_test_tools_log="${_tmp_root}/${_suite}-test-tools.log"
+
+mkdir -p ${_tmp_root}
+cd "${_tmp_root}"
 
 [ -f $_rt/../testlib_local.sh ] && source $_rt/../testlib_local.sh
 
@@ -23,8 +36,10 @@ title() {
 result() {
     if [ $1 -eq 0 ]; then
         l_echo "+++ TEST OK"
+        return 0
     else
         l_echo "!!! TEST FAILED"
+        return 1
     fi
 }
 
@@ -37,6 +52,14 @@ result_ne() {
     result $rc $1
 }
 
+result_match() {
+    if [ "$1" == "$2" ]; then
+        result 0
+    else
+        result 1
+    fi
+}
+
 uid_check() {
     uid=`id -u`
     if [ $uid -ne 0 ]; then
@@ -46,15 +69,12 @@ uid_check() {
 }
 
 start_run() {
-    if [ "x${BASH_VERSION}" = "x" ]; then
-       echo "Bash required, exiting"
-       exit 1
-    fi
 
-    uid_check
     echo "Test run started " > $_testlog
     date --rfc-3339=seconds | tee -a $_testlog
     l_echo "suite: $_suite"
+
+    cat $_testlog > $_test_tools_log
 
     start_run_local
 
@@ -100,10 +120,10 @@ cleanup_run() {
         l_echo "Cleaning ${_tmpdir}"
         for fn in $*
         do
-            [ -d $_tmpdir/$fn ] && rmdir $_tmpdir/$fn
-            [ -f $_tmpdir/$fn ] && rm -f $_tmpdir/$fn
+            [ -d "$_tmpdir/$fn" ] && rmdir "$_tmpdir/$fn"
+            [ -f "$_tmpdir/$fn" ] && rm -f "$_tmpdir/$fn"
         done
-        rmdir $_tmpdir
+        rmdir -p "$_tmpdir"
     else
        l_echo "Debug mode, leave ${_tmpdir}"
     fi
@@ -152,7 +172,7 @@ finish_run() {
 
     if [ $t_fail -ne 0 ]; then
         l_echo "Failed tests:"
-        cat $_testlog | grep FAILED | tee -a $_testlog
+        cat $_testlog | grep FAILED
         l_echo
     fi
 
