@@ -4,77 +4,125 @@
 # Could be use, ignore, rebuild
 # default use if exists or reebuild
 
-# export NANOHAR_USE_PRECOMPILED="ignore"
+export NANOHAR_USE_PRECOMPILED="ignore"
 # export NANOHAR_TMP_ROOT="/tmp/nanohar"
+
+_report_only="no"
+_print_help="no"
+_clean_tmp="no"
 
 . ./testlib.sh
 
+for parm in "$@"
+do
+    case $parm in
+        --print-test-help) _print_help="yes"  ;;
+        --report-only) _report_only="yes" ;;
+        --clean) _clean_tmp="yes" ;;
+            *) echo "Undefined parameter $parm."; exit  ;;
+    esac
+done
+
+if [ "${_clean_tmp}" = "yes" ]; then
+(
+   cd ${_tmp_root}
+
+    for suite in *
+    do
+        rm -f "${suite}-test.log"
+        rm -f "${suite}-test-tools.log"
+    done
+)
+fi
+
+if [ "$_report_only" != "yes" ]; then
 (
     cd $_rt
+    n_suites=0
 
     for suite in *
     do
         if [ -x $suite/testme.sh ]; then
+            n_suites=$((n_suites+1))
             (
                 cd $suite
                 ./testme.sh
             )
         fi
     done
+
+    echo "All Done For $n_suites Suites"
+    echo
 )
-
-
+fi
 
 
 t_ok=`cat ${_tmp_root}/*-test.log | grep "TEST OK" | wc -l`
 t_fail=`cat ${_tmp_root}/*-test.log | grep "TEST FAILED" | wc -l`
 t_skip=`cat ${_tmp_root}/*-test.log | grep "TEST SKIPPED" | wc -l`
 
-if [ $t_fail -ne 0 ]; then
-    echo
-    echo "*** FAILED tests list"
-    (
-        cd $_tmp_root
+echo "*** Run Summary ***"
+(
 
-        for log in *-test.log
+    cd ${_rt}
+    suite_list=`find . -name "*" -type "d"`
+
+    cd ${_tmp_root}
+
+    for suite in $suite_list
+    do
+        [ "${suite}" = "." ] && continue
+
+        echo
+        echo "$suite"
+        echo
+
+        if [ ! -f "${suite}-test.log" ]; then
+            echo "Suite was not run"
+            continue
+        fi
+
+        mapfile -t lines < "${suite}-test.log"
+        for rr in "${lines[@]}"
         do
-            nf=`cat $log | grep "TEST FAILED" | wc -l`
-            if [ $nf -ne 0 ]; then
-                suite=`echo $log | sed -e "s/-test.log//"`
-                echo "Suite $suite has $nf FAILED tests:"
-                cat $log | grep "TEST FAILED"
+            if [ "$_print_help" = "yes" ]; then
+                line=`echo $rr | sed -n -e "s/--- //p" | sed -n -e "s/START //p"`
+                [ ! -z "$line" ] && echo "# $line"
+                line=`echo $rr | sed -n -e "s/ HELP//p"`
+                [ ! -z "$line" ] && echo "$line"
             fi
+
+            line=`echo $rr | sed -n -e "s/--- //p" | grep "TEST "`
+            [ ! -z "$line" ] && echo "$line"
         done
-    )
-fi
+    done
 
-t_crash=`find ${_tmp_root} -name "hs_err*" | wc -l`
 
-if [ $t_crash -ne 0 ]; then
-    echo
-    echo "*** VM CRASHES list"
-    (
-        cd $_tmp_root
+    if [ "$t_fail" -gt 0 ]; then
+        echo "*** FAILED Tests list ***"
 
-        for suite in *
+        for suite in $suite_list
         do
-            if [ -x $suite/testme.sh ]; then
-                for hs in $suite/hs_err* $suite/scratch/hs_err*
-                do
-                    echo $hs
-                done
-            fi
+            [ "${suite}" = "." ] && continue
+            [ ! -f "${suite}-test.log" ] && continue
+            echo
+            echo "$suite"
+
+            mapfile -t lines < "${suite}-test.log"
+            for rr in "${lines[@]}"
+            do
+                line=`echo $rr | sed -n -e "s/--- //p" | grep "TEST FAILED"`
+                [ ! -z "$line" ] && echo "$line"
+            done
         done
-    )
-fi
+    fi
+)
 
 echo
-echo "********************************"
-echo "**** All Suites Run Summary ****"
-if [ $t_crash -ne 0 ]; then
-echo "=> VM CRASHES: $t_crash"
-fi
-echo "Tests PASSED: $t_ok"
-echo "Tests FAILED: $t_fail"
-echo "Tests SKIPPED: $t_skip"
+echo "*** Summa Summarum ***"
+echo
+
+echo "Passed Tests: $t_ok"
+echo "Failed Tests: $t_fail"
+echo "Skipped Tests: $t_skip"
 echo

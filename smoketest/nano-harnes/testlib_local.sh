@@ -52,7 +52,7 @@ finish_run_local() {
 }
 
 extract_precompiled_if_exist() {
-    if [ "${_use_precompiled}" == "ignore" -o "${_use_precompiled}" == "rebuild" ]; then
+    if [ "${_use_precompiled}" != "use" ]; then
         return 1
     fi
 
@@ -69,11 +69,11 @@ extract_precompiled_if_exist() {
 }
 
 build_precompiled() {
-    if [ "${_use_precompiled}" == "ignore" ]; then
+    if [ "${_use_precompiled}" = "ignore" ]; then
         return 1
     fi
 
-    if [ "${_use_precompiled}" == "rebuild" ]; then
+    if [ "${_use_precompiled}" = "rebuild" ]; then
         rm -f "${_rt}/${_precompiled}"
     fi
 
